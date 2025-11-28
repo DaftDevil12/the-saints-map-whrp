@@ -290,6 +290,39 @@
       initializeStorage();
     }
 
+    // Ensure shapes always use Firestore-safe coordinate structures
+    function fixShapeForFirestore(shape) {
+      const s = { ...shape };
+
+      if (s.type === "rectangle" && Array.isArray(s.bounds)) {
+        s.bounds = s.bounds.map(b => {
+          if (Array.isArray(b)) {
+            return { lat: b[0], lng: b[1] };
+          }
+          return { lat: b.lat, lng: b.lng };
+        });
+      }
+
+      if (s.type === "circle" && s.center) {
+        if (Array.isArray(s.center)) {
+          s.center = { lat: s.center[0], lng: s.center[1] };
+        } else {
+          s.center = { lat: s.center.lat, lng: s.center.lng };
+        }
+      }
+
+      if (s.type === "polygon" && Array.isArray(s.coordinates)) {
+        s.coordinates = s.coordinates.map(p => {
+          if (Array.isArray(p)) {
+            return { lat: p[0], lng: p[1] };
+          }
+          return { lat: p.lat, lng: p.lng };
+        });
+      }
+
+      return s;
+    }
+
     // Apply remote Firestore data to the map
     function applyRemoteData(data) {
       isApplyingRemote = true;
@@ -337,9 +370,22 @@
     async function saveState() {
       if (!mapDocRef || isApplyingRemote) return;
 
+      // Ensure no nested arrays sneak in
+      const safeLines = lineFeatures.map(line => ({
+        ...line,
+        coordinates: Array.isArray(line.coordinates)
+          ? line.coordinates.map(p => ({
+              lat: p.lat,
+              lng: p.lng
+            }))
+          : []
+      }));
+
+      const safeShapes = shapeFeatures.map(shape => fixShapeForFirestore(shape));
+
       const data = {
-        lines: lineFeatures,
-        shapes: shapeFeatures,
+        lines: safeLines,
+        shapes: safeShapes,
         labels: textMarkers.map(t => ({
           id: t.id,
           lat: t.lat,
@@ -527,12 +573,21 @@
       lineFeatures.forEach(feature => {
         if (!Array.isArray(feature.coordinates)) return;
         const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
-        L.polyline(latlngs, {
+        const layer = L.polyline(latlngs, {
           color: feature.color,
           weight: 3,
           opacity: 0.9,
           isDrawnLine: true
         }).addTo(map);
+
+        // delete-on-click for lines
+        layer.on('click', async () => {
+          if (confirm('Delete this line? This removes it for everyone.')) {
+            lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
+            redrawLines();
+            await saveState();
+          }
+        });
       });
 
       // Temp line while drawing
@@ -616,4 +671,67 @@
         border-radius: 6px;
         font-size: 13px;
         font-weight: 600;
-        box-shadow: 0 2
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        cursor: pointer;
+        white-space: nowrap;
+      `;
+      el.textContent = text;
+
+      const marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: '',
+          html: el.outerHTML,
+          iconSize: null,
+          iconAnchor: [0, 0]
+        }),
+        draggable: true
+      }).addTo(map);
+
+      const markerObj = { id, lat, lng, text, color, markerInstance: marker };
+
+      marker.on('dragend', async () => {
+        const pos = marker.getLatLng();
+        markerObj.lat = pos.lat;
+        markerObj.lng = pos.lng;
+        await saveState();
+      });
+
+      marker.on('click', async () => {
+        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
+        if (action === null) return;
+        if (action.toUpperCase() === 'DELETE') {
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          await saveState();
+        } else if (action.trim()) {
+          markerObj.text = action.trim();
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
+          await saveState();
+        }
+      });
+
+      textMarkers.push(markerObj);
+      return markerObj;
+    }
+
+    // Sidebar toggle
+    window.toggleSidebar = function () {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    };
+
+    // Category selection (placeholder)
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        alert('Category markers would be shown here: ' + item.dataset.category);
+      });
+    });
+
+    // Initialize everything
+    initMap();
+  </script>
+</body>
+</html>
