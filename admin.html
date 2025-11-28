@@ -1,224 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>The Saints Admin Panel</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<title>The Saints - Admin Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    getDocs,
+    collection,
+    deleteDoc
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+    authDomain: "the-saints-2f622.firebaseapp.com",
+    projectId: "the-saints-2f622",
+    storageBucket: "the-saints-2f622.firebasestorage.app",
+    messagingSenderId: "131705359242",
+    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+    measurementId: "G-36PY404Q8N"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let adminUser = null;
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    // Check local login
+    const stored = localStorage.getItem("saintsUser");
+    if (!stored) return window.location.href = "login.html";
+
+    adminUser = JSON.parse(stored);
+    if (adminUser.role !== "admin") {
+      alert("Admins only.");
+      return window.location.href = "index.html";
+    }
+
+    loadUsers();
+  });
+
+  // Load users into table
+  async function loadUsers() {
+    const q = await getDocs(collection(db, "users"));
+    const container = document.getElementById("user-list");
+    container.innerHTML = "";
+
+    q.forEach(docSnap => {
+      const u = docSnap.data();
+
+      container.innerHTML += `
+        <div class="p-3 border-b border-gray-700 flex justify-between items-center">
+          <div>
+            <p class="font-bold">${u.username}</p>
+            <p class="text-sm opacity-70">${u.role.toUpperCase()}</p>
+            <p class="text-sm ${u.approved ? 'text-green-400' : 'text-red-400'}">
+              ${u.approved ? "APPROVED" : "PENDING"}
+            </p>
+          </div>
+
+          <div class="flex gap-2">
+            ${!u.approved ? `<button class="approve-btn bg-green-600 px-3 py-1" data-user="${u.username}">Approve</button>` : ""}
+            ${u.role !== "admin" ? `<button class="admin-btn bg-blue-600 px-3 py-1" data-user="${u.username}">Make Admin</button>` : ""}
+            <button class="delete-btn bg-red-600 px-3 py-1" data-user="${u.username}">Delete</button>
+          </div>
+        </div>
+      `;
+    });
+
+    // Add listeners
+    document.querySelectorAll(".approve-btn").forEach(b =>
+      b.addEventListener("click", () => approveUser(b.dataset.user))
+    );
+
+    document.querySelectorAll(".admin-btn").forEach(b =>
+      b.addEventListener("click", () => makeAdmin(b.dataset.user))
+    );
+
+    document.querySelectorAll(".delete-btn").forEach(b =>
+      b.addEventListener("click", () => deleteUser(b.dataset.user))
+    );
+  }
+
+  async function approveUser(username) {
+    await setDoc(doc(db, "users", username), { approved: true }, { merge: true });
+    loadUsers();
+  }
+
+  async function makeAdmin(username) {
+    await setDoc(doc(db, "users", username), { role: "admin", approved: true }, { merge: true });
+    loadUsers();
+  }
+
+  async function deleteUser(username) {
+    if (!confirm("Delete this user?")) return;
+    await deleteDoc(doc(db, "users", username));
+    loadUsers();
+  }
+</script>
+
+<style>
+  body {
+    background: #0b1120;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+  }
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
 
-  <div class="max-w-5xl mx-auto py-6 px-4">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-cyan-300">The Saints – Admin Panel</h1>
-        <p class="text-sm text-slate-400">Approve or manage user access to the map.</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <div id="admin-email" class="text-xs text-slate-400"></div>
-        <button id="btn-map" class="px-3 py-1.5 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-600">
-          Go to Map
-        </button>
-        <button id="btn-logout" class="px-3 py-1.5 text-xs rounded bg-red-600 hover:bg-red-500">
-          Log out
-        </button>
-      </div>
-    </div>
+<body class="p-10">
+  <h1 class="text-4xl font-bold mb-6">THE SAINTS ADMIN PANEL</h1>
 
-    <div id="status" class="text-sm mb-4 text-slate-300"></div>
-
-    <div class="grid gap-6 md:grid-cols-2">
-      <!-- Pending users -->
-      <div class="bg-slate-900/80 border border-slate-700 rounded-lg p-4">
-        <h2 class="text-lg font-semibold mb-3 text-cyan-200">Pending Users</h2>
-        <div id="pending-list" class="space-y-2 text-sm">
-          <div class="text-slate-500 text-xs">Loading...</div>
-        </div>
-      </div>
-
-      <!-- All users -->
-      <div class="bg-slate-900/80 border border-slate-700 rounded-lg p-4">
-        <h2 class="text-lg font-semibold mb-3 text-cyan-200">All Users</h2>
-        <div id="users-list" class="space-y-2 text-sm">
-          <div class="text-slate-500 text-xs">Loading...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { 
-      getFirestore, collection, getDocs, doc, updateDoc, deleteDoc 
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-      authDomain: "the-saints-2f622.firebaseapp.com",
-      projectId: "the-saints-2f622",
-      storageBucket: "the-saints-2f622.firebasestorage.app",
-      messagingSenderId: "131705359242",
-      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-      measurementId: "G-36PY404Q8N"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    const statusEl = document.getElementById("status");
-    const pendingListEl = document.getElementById("pending-list");
-    const usersListEl = document.getElementById("users-list");
-    const adminEmailEl = document.getElementById("admin-email");
-
-    function setStatus(msg) {
-      statusEl.textContent = msg || "";
-    }
-
-    document.getElementById("btn-logout").addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "login.html";
-    });
-
-    document.getElementById("btn-map").addEventListener("click", () => {
-      window.location.href = "index.html?id=default-map";
-    });
-
-    async function loadUsers() {
-      setStatus("Loading users...");
-      const snap = await getDocs(collection(db, "users"));
-      const users = [];
-      snap.forEach(docSnap => {
-        users.push({ id: docSnap.id, ...docSnap.data() });
-      });
-
-      const pending = users.filter(u => !u.approved);
-      const all = users;
-
-      // Pending users section
-      if (pending.length === 0) {
-        pendingListEl.innerHTML = '<div class="text-xs text-slate-500">No pending users.</div>';
-      } else {
-        pendingListEl.innerHTML = "";
-        pending.forEach(u => {
-          const div = document.createElement("div");
-          div.className = "flex items-center justify-between bg-slate-800/70 rounded px-3 py-2";
-          div.innerHTML = `
-            <div>
-              <div class="font-medium text-slate-100 text-xs">${u.email || "No email"}</div>
-              <div class="text-[11px] text-slate-400">id: ${u.id}</div>
-            </div>
-            <div class="flex gap-2">
-              <button class="btn-approve px-2 py-1 text-[11px] rounded bg-cyan-600 hover:bg-cyan-500" data-id="${u.id}">
-                Approve
-              </button>
-              <button class="btn-reject px-2 py-1 text-[11px] rounded bg-slate-700 hover:bg-slate-600" data-id="${u.id}">
-                Delete
-              </button>
-            </div>
-          `;
-          pendingListEl.appendChild(div);
-        });
-
-        pendingListEl.querySelectorAll(".btn-approve").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const id = btn.getAttribute("data-id");
-            await updateDoc(doc(db, "users", id), { approved: true });
-            setStatus("User approved.");
-            await loadUsers();
-          });
-        });
-
-        pendingListEl.querySelectorAll(".btn-reject").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const id = btn.getAttribute("data-id");
-            if (!confirm("Delete this pending user?")) return;
-            await deleteDoc(doc(db, "users", id));
-            setStatus("User deleted.");
-            await loadUsers();
-          });
-        });
-      }
-
-      // All users section
-      if (all.length === 0) {
-        usersListEl.innerHTML = '<div class="text-xs text-slate-500">No users.</div>';
-      } else {
-        usersListEl.innerHTML = "";
-        all.forEach(u => {
-          const div = document.createElement("div");
-          div.className = "flex items-center justify-between bg-slate-800/70 rounded px-3 py-2";
-          div.innerHTML = `
-            <div>
-              <div class="font-medium text-slate-100 text-xs">${u.email || "No email"}</div>
-              <div class="text-[11px] text-slate-400">
-                id: ${u.id} · role: ${u.role || "user"} · ${u.approved ? "APPROVED" : "PENDING"}
-              </div>
-            </div>
-            <div class="flex gap-2">
-              <button class="btn-toggle-approve px-2 py-1 text-[11px] rounded bg-slate-700 hover:bg-slate-600" data-id="${u.id}">
-                ${u.approved ? "Revoke" : "Approve"}
-              </button>
-              <button class="btn-make-admin px-2 py-1 text-[11px] rounded bg-amber-500 hover:bg-amber-400" data-id="${u.id}">
-                Make Admin
-              </button>
-            </div>
-          `;
-          usersListEl.appendChild(div);
-        });
-
-        usersListEl.querySelectorAll(".btn-toggle-approve").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const id = btn.getAttribute("data-id");
-            const user = all.find(u => u.id === id);
-            await updateDoc(doc(db, "users", id), { approved: !user.approved });
-            setStatus("User approval updated.");
-            await loadUsers();
-          });
-        });
-
-        usersListEl.querySelectorAll(".btn-make-admin").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const id = btn.getAttribute("data-id");
-            if (!confirm("Make this user an admin?")) return;
-            await updateDoc(doc(db, "users", id), { role: "admin", approved: true });
-            setStatus("User promoted to admin.");
-            await loadUsers();
-          });
-        });
-      }
-
-      setStatus("");
-    }
-
-    // Require admin login
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-        return;
-      }
-      adminEmailEl.textContent = user.email || "";
-      try {
-        const snap = await getDocs(collection(db, "users"));
-        const list = [];
-        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-        const me = list.find(u => u.id === user.uid);
-        if (!me || me.role !== "admin" || !me.approved) {
-          alert("You are not authorized to access the admin panel.");
-          window.location.href = "index.html?id=default-map";
-          return;
-        }
-        await loadUsers();
-      } catch (e) {
-        console.error(e);
-        setStatus("Error loading users.");
-      }
-    });
-  </script>
+  <div id="user-list" class="bg-black bg-opacity-40 border border-blue-900 rounded p-4"></div>
 </body>
 </html>
