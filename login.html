@@ -1,162 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>The Saints - Secure Login</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    getDoc 
-  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  <meta charset="UTF-8" />
+  <title>The Saints - Secure Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000000 100%);
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .screen {
+      background: rgba(3,7,18,0.9);
+      border: 2px solid rgba(37,99,235,0.8);
+      box-shadow:
+        0 0 40px rgba(37,99,235,0.4),
+        0 0 120px rgba(15,23,42,0.8);
+      backdrop-filter: blur(10px);
+    }
+    #top-logo {
+      width: 160px;
+      opacity: 0.9;
+    }
+    #bottom-watermark {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      color: white;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center">
 
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-    authDomain: "the-saints-2f622.firebaseapp.com",
-    projectId: "the-saints-2f622",
-    storageBucket: "the-saints-2f622.firebasestorage.app",
-    messagingSenderId: "131705359242",
-    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-    measurementId: "G-36PY404Q8N"
-  };
+  <!-- Top watermark logo -->
+  <img src="watermark.png" id="top-logo" class="absolute top-6">
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  <div class="screen rounded-2xl px-8 py-7 w-full max-w-md text-white">
+    <h2 class="text-xs tracking-[0.3em] text-cyan-300 text-center mb-2">
+      SECURE TERMINAL
+    </h2>
+    <h1 class="text-2xl font-semibold text-center mb-6">
+      THE SAINTS ACCESS NODE
+    </h1>
 
-  // SHA-256 hashing for passwords
-  async function hash(text) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(text);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-  }
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs text-slate-300 mb-1">USERNAME</label>
+        <input id="username" type="text"
+          class="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100
+                 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-300 mb-1">PASSWORD</label>
+        <input id="password" type="password"
+          class="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100
+                 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+    </div>
 
-  // LOGIN HANDLER
-  document.addEventListener("DOMContentLoaded", () => {
+    <div id="status" class="mt-3 text-xs min-h-[1.2rem] text-center text-red-400"></div>
+
+    <div class="mt-4 space-y-2">
+      <button id="login-btn"
+        class="w-full py-2.5 rounded-md bg-blue-600 hover:bg-blue-500 font-semibold text-sm shadow-lg">
+        LOGIN
+      </button>
+      <button id="signup-btn"
+        class="w-full py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-xs border border-slate-600">
+        REQUEST ACCOUNT
+      </button>
+    </div>
+
+    <p class="mt-4 text-[11px] text-slate-400 text-center">
+      New accounts start as <span class="text-slate-200 font-semibold">UNTRUSTED</span> and require
+      admin approval before accessing shared intel.
+    </p>
+  </div>
+
+  <div id="bottom-watermark">
+    Made by <span class="font-semibold">Dante Alberts</span>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc 
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+      authDomain: "the-saints-2f622.firebaseapp.com",
+      projectId: "the-saints-2f622",
+      storageBucket: "the-saints-2f622.firebasestorage.app",
+      messagingSenderId: "131705359242",
+      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+      measurementId: "G-36PY404Q8N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const statusEl = document.getElementById("status");
     const loginBtn = document.getElementById("login-btn");
     const signupBtn = document.getElementById("signup-btn");
 
-    loginBtn.addEventListener("click", async () => {
-      const user = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
+    function setStatus(msg, isError = true) {
+      statusEl.textContent = msg || "";
+      statusEl.className =
+        "mt-3 text-xs min-h-[1.2rem] text-center " + (isError ? "text-red-400" : "text-cyan-300");
+    }
 
-      if (!user || !pass) {
-        alert("Enter username and password.");
+    async function hash(text) {
+      const enc = new TextEncoder();
+      const data = enc.encode(text);
+      const buf = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    }
+
+    // LOGIN
+    loginBtn.addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!username || !password) {
+        setStatus("Enter username and password.");
         return;
       }
 
-      const ref = doc(db, "users", user);
+      setStatus("Checking credentials...", false);
+
+      const ref = doc(db, "users", username);
       const snap = await getDoc(ref);
 
       if (!snap.exists()) {
-        alert("User does not exist.");
+        setStatus("User not found.");
         return;
       }
 
       const data = snap.data();
-      const hashed = await hash(pass);
+      const hashed = await hash(password);
 
       if (hashed !== data.passwordHash) {
-        alert("Incorrect password.");
+        setStatus("Incorrect password.");
         return;
       }
 
       if (!data.approved) {
-        alert("Your account is not approved yet.");
+        // not approved yet
+        setStatus("Account not approved yet. Redirecting...", false);
+        setTimeout(() => {
+          window.location.href = "awaiting-approval.html";
+        }, 900);
         return;
       }
 
       // Save session
       localStorage.setItem("saintsUser", JSON.stringify({
-        username: user,
-        role: data.role
+        username,
+        role: data.role || "untrusted"
       }));
 
-      window.location.href = "index.html";
+      setStatus("Access granted. Redirecting...", false);
+
+      // route by role
+      const role = data.role || "untrusted";
+
+      setTimeout(() => {
+        if (role === "untrusted") {
+          window.location.href = "personal-map.html";
+        } else if (role === "trusted") {
+          window.location.href = "index.html";
+        } else if (role === "admin") {
+          window.location.href = "admin-map-picker.html";
+        } else {
+          window.location.href = "index.html";
+        }
+      }, 900);
     });
 
-    // SIGNUP HANDLER
+    // SIGNUP
     signupBtn.addEventListener("click", async () => {
-      const user = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
 
-      if (!user || !pass) {
-        alert("Enter username & password.");
+      if (!username || !password) {
+        setStatus("Enter username and password to request an account.");
         return;
       }
 
-      const ref = doc(db, "users", user);
+      if (username.includes(" ")) {
+        setStatus("Username cannot contain spaces.");
+        return;
+      }
+
+      setStatus("Submitting account request...", false);
+
+      const ref = doc(db, "users", username);
       const snap = await getDoc(ref);
-
       if (snap.exists()) {
-        alert("This username is already taken.");
+        setStatus("That username is already taken.");
         return;
       }
 
-      const hashed = await hash(pass);
+      const hashed = await hash(password);
 
       await setDoc(ref, {
-        username: user,
+        username,
         passwordHash: hashed,
+        role: "untrusted",
         approved: false,
-        role: "user"
+        createdAt: new Date().toISOString()
       });
 
-      alert("Account created. Awaiting admin approval.");
+      setStatus("Account created. Waiting for admin approval...", false);
+      setTimeout(() => {
+        window.location.href = "awaiting-approval.html";
+      }, 1000);
     });
-  });
-</script>
 
-<style>
-  body {
-    background: linear-gradient(180deg, #0b1120, #0d1b2a);
-    height: 100vh;
-    overflow: hidden;
-    font-family: 'Orbitron', sans-serif;
-  }
-  .login-box {
-    background: rgba(0,0,0,0.65);
-    border: 2px solid #1e3a8a;
-    box-shadow: 0px 0px 20px #1e3a8a;
-    backdrop-filter: blur(6px);
-  }
-  #top-logo {
-    width: 150px;
-    opacity: 0.85;
-  }
-  #bottom-watermark {
-    position: fixed;
-    bottom: 10px;
-    width: 100%;
-    text-align: center;
-    font-size: 13px;
-    color: white;
-    opacity: 0.55;
-  }
-</style>
-</head>
-
-<body class="flex items-center justify-center">
-
-  <!-- TOP WATERMARK LOGO -->
-  <img src="watermark.png" id="top-logo" class="absolute top-6">
-
-  <div class="login-box p-8 rounded-lg text-white w-96 text-center">
-    <h1 class="text-3xl font-bold mb-6">THE SAINTS ACCESS TERMINAL</h1>
-
-    <input id="username" type="text" placeholder="USERNAME" class="w-full p-3 mb-3 bg-black text-white border border-blue-700 rounded">
-    <input id="password" type="password" placeholder="PASSWORD" class="w-full p-3 mb-6 bg-black text-white border border-blue-700 rounded">
-
-    <button id="login-btn" class="w-full py-3 mb-3 bg-blue-700 hover:bg-blue-600 font-bold">LOGIN</button>
-    <button id="signup-btn" class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-sm">REQUEST ACCOUNT</button>
-  </div>
-
-  <!-- Bottom watermark -->
-  <div id="bottom-watermark">Made by Dante Alberts</div>
-
+    // If user is already logged in (localStorage), auto-route
+    (function autoRouteIfLoggedIn() {
+      const s = localStorage.getItem("saintsUser");
+      if (!s) return;
+      try {
+        const u = JSON.parse(s);
+        if (!u.username || !u.role) return;
+        // just send them to appropriate place
+        if (u.role === "untrusted") {
+          window.location.href = "personal-map.html";
+        } else if (u.role === "trusted") {
+          window.location.href = "index.html";
+        } else if (u.role === "admin") {
+          window.location.href = "admin-map-picker.html";
+        }
+      } catch (_) {}
+    })();
+  </script>
 </body>
 </html>
