@@ -67,28 +67,37 @@
 
   let map, drawnLayer;
 
-  function initMap() {
-    map = L.map('map', {
-      crs: L.CRS.Simple,
+function initMap() {
+  map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -2,
+    maxZoom: 4,
+    maxNativeZoom: 4,
+    center: [0, 0],
+    zoom: 0,
+    zoomSnap: 0.25,
+    zoomDelta: 0.5
+  });
+
+  const bounds = [[-256, -256], [256, 256]];
+
+  L.tileLayer(
+    'https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp',
+    {
       minZoom: -2,
       maxZoom: 4,
       maxNativeZoom: 4,
-      center: [0, 0],
-      zoom: 0,
-    });
-
-    const bounds = [[-256, -256], [256, 256]];
-    L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
-      minZoom: -2,
-      maxZoom: 4,
       noWrap: true,
       tileSize: 256,
-      bounds,
+      bounds: bounds,
       attribution: '© Rockstar Games | GTA V UHD Map'
-    }).addTo(map);
+    }
+  ).addTo(map);
 
-    map.setMaxBounds(bounds);
-    map.fitBounds(bounds);
+  map.setMaxBounds(bounds);
+  map.fitBounds(bounds);
+}
+
 
     drawnLayer = L.featureGroup().addTo(map);
     map.on('click', onMapClick);
