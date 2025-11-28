@@ -87,10 +87,10 @@
     </a>
 
     <!-- Placeholder -->
-    <div class="card">
-      <h2 class="text-xl font-semibold mb-2">📦 Placeholder</h2>
-      <p class="text-gray-400 text-sm">Future Saints systems will go here.</p>
-    </div>
+<a id="btn-inventory" href="inventory.html" class="card hidden">
+  <h2 class="text-xl font-semibold mb-2 text-yellow-300">📦 Inventory Management</h2>
+  <p class="text-gray-400 text-sm">Add, remove & modify shared Saints inventory.</p>
+</a>
 
   </div>
 
@@ -166,6 +166,12 @@
     if (role === "admin") {
       document.getElementById("btn-admin").classList.remove("hidden");
     }
+
+    // Trusted & Admin
+if (user.role === "trusted" || user.role === "admin") {
+    document.getElementById("btn-inventory").classList.remove("hidden");
+}
+
   }
 
   loadUser();
