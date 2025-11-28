@@ -1,184 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Your Personal Saints Map</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-
-<style>
-  body { margin: 0; }
-  #map { position:absolute; top:0; bottom:0; left:0; right:0; }
-  #watermark {
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
-    width: 120px;
-    opacity: 0.55;
-    pointer-events: none;
-    z-index: 9999;
-  }
-</style>
-
+  <meta charset="UTF-8" />
+  <title>Your Personal Saints Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { position:absolute; top:0; left:0; right:0; bottom:0; }
+    #watermark {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      width: 120px;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #top-bar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+    }
+  </style>
 </head>
 <body>
+  <img src="watermark.png" id="watermark">
 
-<img src="watermark.png" id="watermark">
+  <div id="top-bar" class="px-3 py-2 rounded bg-slate-900/80 text-xs text-white border border-slate-700">
+    <div id="map-title" class="font-semibold mb-1"></div>
+    <div class="flex gap-2">
+      <button onclick="window.location.href='index.html'"
+              class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600">
+        Shared Map
+      </button>
+      <button onclick="window.location.href='admin-map-picker.html'"
+              class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600">
+        Admin Center
+      </button>
+    </div>
+  </div>
 
-<div id="map"></div>
+  <div id="map"></div>
 
-<script type="module">
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-/* ------------------ FIREBASE ------------------ */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+      authDomain: "the-saints-2f622.firebaseapp.com",
+      projectId: "the-saints-2f622",
+      storageBucket: "the-saints-2f622.firebasestorage.app",
+      messagingSenderId: "131705359242",
+      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+      measurementId: "G-36PY404Q8N"
+    };
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-  authDomain: "the-saints-2f622.firebaseapp.com",
-  projectId: "the-saints-2f622",
-  storageBucket: "the-saints-2f622.appspot.com",
-  messagingSenderId: "131705359242",
-  appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    // get current session
+    const s = localStorage.getItem("saintsUser");
+    if (!s) {
+      window.location.href = "login.html";
+    }
+    let sessionUser;
+    try {
+      sessionUser = JSON.parse(s);
+    } catch {
+      window.location.href = "login.html";
+    }
 
-/* ------------------ USER AUTH (LOCAL ACCOUNT) ------------------ */
-const user = JSON.parse(localStorage.getItem("saintsUser"));
-if (!user) window.location = "login.html";
+    const params = new URLSearchParams(window.location.search);
+    const requestedUser = params.get("user");
 
-const username = user.username;
+    let mapOwner = sessionUser.username;
+    if (requestedUser && sessionUser.role === "admin") {
+      mapOwner = requestedUser;
+    }
 
-/* ------------------ MAP FIRESTORE REFERENCE ------------------ */
-const mapDocRef = doc(db, "maps/personal", username);
+    document.getElementById("map-title").textContent =
+      `Personal Map: ${mapOwner}` + (sessionUser.role === "admin" && requestedUser ? " (viewed as admin)" : "");
 
-/* ------------------ MAP INIT ------------------ */
-let map;
-let isDrawing = false;
+    const mapDocRef = doc(db, "maps/personal", mapOwner);
 
-let lineFeatures = [];
-let shapeFeatures = [];
-let textMarkers = [];
-let currentLineCoords = [];
+    let map;
+    let isDrawing = false;
+    let lineFeatures = [];
+    let currentLine = [];
 
-function initMap() {
-  map = L.map("map", {
-    crs: L.CRS.Simple,
-    minZoom: -2,
-    maxZoom: 4,
-    zoom: 0,
-  });
+    function initMap() {
+      map = L.map("map", {
+        crs: L.CRS.Simple,
+        minZoom: -2,
+        maxZoom: 4,
+        zoom: 0
+      });
 
-  const bounds = [[-256, -256], [256, 256]];
+      const bounds = [[-256,-256],[256,256]];
+      L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
+        minZoom: -2,
+        maxZoom: 4,
+        maxNativeZoom: 4,
+        noWrap: true,
+        tileSize: 256,
+        bounds
+      }).addTo(map);
 
-  L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
-    minZoom: -2,
-    maxZoom: 4,
-    maxNativeZoom: 4,
-    noWrap: true,
-    tileSize: 256,
-    bounds: bounds,
-  }).addTo(map);
+      map.setMaxBounds(bounds);
+      map.fitBounds(bounds);
 
-  map.setMaxBounds(bounds);
-  map.fitBounds(bounds);
+      map.on("mousedown", e => {
+        isDrawing = true;
+        currentLine = [[e.latlng.lat, e.latlng.lng]];
+      });
 
-  loadMapData();
-}
+      map.on("mousemove", e => {
+        if (!isDrawing) return;
+        currentLine.push([e.latlng.lat, e.latlng.lng]);
+        redraw(true);
+      });
 
-async function loadMapData() {
-  const snap = await getDoc(mapDocRef);
-  if (snap.exists()) {
-    const data = snap.data();
-    lineFeatures = data.lines || [];
-    shapeFeatures = data.shapes || [];
-    redraw();
-  }
+      map.on("mouseup", async () => {
+        if (!isDrawing) return;
+        isDrawing = false;
+        if (currentLine.length > 1) {
+          lineFeatures.push({
+            id: "line-" + Date.now(),
+            coordinates: currentLine,
+            color: "#38bdf8"
+          });
+          await saveState();
+        }
+        currentLine = [];
+        redraw();
+      });
 
-  // live updates
-  onSnapshot(mapDocRef, (snap) => {
-    if (!snap.exists()) return;
-    const data = snap.data();
-    lineFeatures = data.lines || [];
-    shapeFeatures = data.shapes || [];
-    redraw();
-  });
-}
+      loadState();
+    }
 
-async function saveState() {
-  await setDoc(mapDocRef, {
-    lines: lineFeatures,
-    shapes: shapeFeatures
-  });
-}
+    async function loadState() {
+      const snap = await getDoc(mapDocRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        lineFeatures = data.lines || [];
+        redraw();
+      }
 
-/* ------------------ MAP DRAWING ------------------ */
+      onSnapshot(mapDocRef, snap2 => {
+        if (!snap2.exists()) return;
+        const data2 = snap2.data();
+        lineFeatures = data2.lines || [];
+        redraw();
+      });
+    }
 
-map?.on("mousedown", (e) => {
-  isDrawing = true;
-  currentLineCoords = [[e.latlng.lat, e.latlng.lng]];
-});
+    async function saveState() {
+      await setDoc(mapDocRef, {
+        lines: lineFeatures
+      });
+    }
 
-map?.on("mousemove", (e) => {
-  if (!isDrawing) return;
-  currentLineCoords.push([e.latlng.lat, e.latlng.lng]);
-  redraw(true);
-});
+    function redraw(includeTemp = false) {
+      map.eachLayer(layer => {
+        if (layer.options && layer.options.isDrawLayer) {
+          map.removeLayer(layer);
+        }
+      });
 
-map?.on("mouseup", async () => {
-  if (!isDrawing) return;
-  isDrawing = false;
+      lineFeatures.forEach(line => {
+        L.polyline(line.coordinates, {
+          color: line.color,
+          weight: 3,
+          isDrawLayer: true
+        }).addTo(map);
+      });
 
-  if (currentLineCoords.length > 1) {
-    lineFeatures.push({
-      id: "line-" + Date.now(),
-      coordinates: currentLineCoords,
-      color: "#00aaff"
-    });
-    await saveState();
-  }
+      if (includeTemp && currentLine.length) {
+        L.polyline(currentLine, {
+          color: "#38bdf8",
+          weight: 3,
+          opacity: 0.6,
+          isDrawLayer: true
+        }).addTo(map);
+      }
+    }
 
-  currentLineCoords = [];
-  redraw();
-});
-
-/* ------------------ REDRAW ------------------ */
-function redraw(includeTemp = false) {
-  map.eachLayer(layer => {
-    if (layer.options?.isDrawLayer) map.removeLayer(layer);
-  });
-
-  lineFeatures.forEach(line => {
-    L.polyline(line.coordinates, {
-      color: line.color,
-      weight: 3,
-      isDrawLayer: true
-    }).addTo(map);
-  });
-
-  if (includeTemp && currentLineCoords.length) {
-    L.polyline(currentLineCoords, {
-      color: "#00aaff",
-      weight: 3,
-      opacity: 0.6,
-      isDrawLayer: true
-    }).addTo(map);
-  }
-}
-
-initMap();
-
-</script>
-
+    initMap();
+  </script>
 </body>
 </html>
