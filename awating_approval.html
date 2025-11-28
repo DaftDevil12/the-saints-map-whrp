@@ -1,50 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Awaiting Approval - The Saints</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-  body {
-    background: linear-gradient(180deg, #0b1120, #0d1b2a);
-    height: 100vh;
-    overflow: hidden;
-    font-family: 'Orbitron', sans-serif;
-  }
-  .box {
-    background: rgba(0,0,0,0.65);
-    border: 2px solid #1e3a8a;
-    box-shadow: 0px 0px 20px #1e3a8a;
-    backdrop-filter: blur(6px);
-  }
-  #top-logo {
-    width: 150px;
-    opacity: 0.85;
-  }
-  #bottom-watermark {
-    position: fixed;
-    bottom: 10px;
-    width: 100%;
-    text-align: center;
-    font-size: 13px;
-    color: white;
-    opacity: 0.55;
-  }
-</style>
-
+  <meta charset="UTF-8" />
+  <title>Awaiting Approval - The Saints</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000000 100%);
+      height: 100vh;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .panel {
+      background: rgba(3,7,18,0.9);
+      border: 2px solid rgba(59,130,246,0.7);
+      box-shadow: 0 0 40px rgba(59,130,246,0.45);
+      backdrop-filter: blur(8px);
+    }
+    #top-logo {
+      width: 150px;
+      opacity: 0.85;
+    }
+    #bottom-watermark {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      color: white;
+      opacity: 0.55;
+    }
+  </style>
 </head>
-<body class="flex flex-col items-center justify-center">
+<body class="flex flex-col items-center justify-center text-white">
 
-  <img src="watermark.png" id="top-logo" class="absolute top-8">
+  <img src="watermark.png" id="top-logo" class="absolute top-6">
 
-  <div class="box p-8 rounded-lg text-white w-96 text-center">
-    <h1 class="text-3xl font-bold mb-6">ACCOUNT PENDING</h1>
-    <p class="mb-4">Your account has been created, but an administrator must approve it before you can access The Saints systems.</p>
-    <p class="opacity-75 text-sm">Please check back later.<br>You may close this page.</p>
+  <div class="panel rounded-xl p-8 w-[22rem] text-center">
+    <h1 class="text-2xl font-semibold mb-3 text-cyan-300 tracking-[0.18em]">
+      ACCESS PENDING
+    </h1>
+    <p class="text-sm text-slate-200 mb-3">
+      Your account has been created but is awaiting approval by a Saints administrator.
+    </p>
+    <p class="text-xs text-slate-400 mb-6">
+      Once approved, you will be able to log in again and access your assigned map.
+    </p>
+    <button onclick="window.location.href='login.html'"
+            class="px-4 py-2 text-sm font-semibold rounded bg-slate-800 hover:bg-slate-700 border border-slate-500">
+      Back to Login
+    </button>
   </div>
 
-  <div id="bottom-watermark">Made by Dante Alberts</div>
-
+  <div id="bottom-watermark">
+    Made by <span class="font-semibold">Dante Alberts</span>
+  </div>
 </body>
 </html>
