@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GTA 5 Interactive Map - Map Genie Style</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    
+    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; }
+    
+    .sidebar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 300px;
+      background: #1f2937;
+      color: #fff;
+      overflow-y: auto;
+      z-index: 1000;
+      transition: transform 0.3s;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+    }
+    
+    .sidebar.collapsed { transform: translateX(-300px); }
+    
+    .sidebar-toggle {
+      position: absolute;
+      left: 310px;
+      top: 20px;
+      background: #1f2937;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+      z-index: 1001;
+      transition: left 0.3s;
+    }
+    
+    .sidebar.collapsed + .sidebar-toggle { left: 10px; }
+    
+    .toolbar {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+      max-width: 350px;
+    }
+    
+    .tool-btn {
+      @apply px-3 py-2 rounded-md text-sm font-medium bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all;
+    }
+    
+    .tool-btn.active {
+      @apply bg-blue-600 text-white ring-2 ring-blue-400;
+    }
+    
+    .category-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #374151;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.2s;
+    }
+    
+    .category-item:hover { background: #374151; }
+    
+    .category-item.active { background: #3b82f6; }
+    
+    .shape-btn {
+      @apply w-10 h-10 flex items-center justify-center rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all cursor-pointer;
+    }
+    
+    .shape-btn.active {
+      @apply bg-purple-600 text-white ring-2 ring-purple-400;
+    }
+    
+    .color-swatch {
+      @apply w-8 h-8 rounded-md cursor-pointer border-2 border-transparent hover:scale-110 transition-transform;
+    }
+    
+    .color-swatch.active {
+      @apply border-white ring-2 ring-white;
+    }
+    
+    .leaflet-container { background: #1a1a1a; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar">
+    <div class="p-4 border-b border-gray-700">
+      <h1 class="text-xl font-bold">🗺️ GTA V Map</h1>
+      <p class="text-sm text-gray-400 mt-1">Interactive Collectibles & Drawing</p>
+    </div>
+    
+    <div id="categories">
+      <div class="category-item" data-category="collectibles">
+        <i class="fas fa-gem"></i>
+        <span>Collectibles</span>
+      </div>
+      <div class="category-item" data-category="ammunation">
+        <i class="fas fa-gun"></i>
+        <span>Ammu-Nation</span>
+      </div>
+      <div class="category-item" data-category="food">
+        <i class="fas fa-utensils"></i>
+        <span>Food & Drink</span>
+      </div>
+      <div class="category-item" data-category="barbers">
+        <i class="fas fa-cut"></i>
+        <span>Barber Shops</span>
+      </div>
+      <div class="category-item" data-category="tattoos">
+        <i class="fas fa-star"></i>
+        <span>Tattoo Shops</span>
+      </div>
+      <div class="category-item" data-category="automotive">
+        <i class="fas fa-car"></i>
+        <span>Automotive</span>
+      </div>
+      <div class="category-item" data-category="clothing">
+        <i class="fas fa-tshirt"></i>
+        <span>Clothing Stores</span>
+      </div>
+      <div class="category-item" data-category="hospitals">
+        <i class="fas fa-hospital"></i>
+        <span>Hospitals</span>
+      </div>
+      <div class="category-item" data-category="police">
+        <i class="fas fa-shield"></i>
+        <span>Police Stations</span>
+      </div>
+      <div class="category-item" data-category="stunts">
+        <i class="fas fa-motorcycle"></i>
+        <span>Stunt Jumps</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+  </div>
+
+  <!-- Drawing Toolbar -->
+  <div class="toolbar">
+    <h3 class="text-lg font-bold mb-3">Drawing Tools</h3>
+    
+    <div class="flex flex-col gap-3">
+      <!-- Tool Selection -->
+      <div>
+        <label class="text-xs font-medium text-gray-700 mb-1 block">Tool:</label>
+        <div class="flex gap-2">
+          <button id="tool-pan" class="tool-btn active">🖐️ Pan</button>
+          <button id="tool-text" class="tool-btn">📝 Text</button>
+          <button id="tool-draw" class="tool-btn">✏️ Draw</button>
+        </div>
+      </div>
+      
+      <!-- Shape Tools -->
+      <div>
+        <label class="text-xs font-medium text-gray-700 mb-1 block">Shapes:</label>
+        <div class="flex gap-2">
+          <div id="shape-rectangle" class="shape-btn" title="Rectangle">
+            <i class="fas fa-square"></i>
+          </div>
+          <div id="shape-circle" class="shape-btn" title="Circle">
+            <i class="fas fa-circle"></i>
+          </div>
+          <div id="shape-polygon" class="shape-btn" title="Polygon">
+            <i class="fas fa-draw-polygon"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Color Picker -->
+      <div>
+        <label class="text-xs font-medium text-gray-700 mb-1 block">Color:</label>
+        <div class="flex gap-2 flex-wrap">
+          <div class="color-swatch active" data-color="#ef4444" style="background: #ef4444;"></div>
+          <div class="color-swatch" data-color="#3b82f6" style="background: #3b82f6;"></div>
+          <div class="color-swatch" data-color="#10b981" style="background: #10b981;"></div>
+          <div class="color-swatch" data-color="#f59e0b" style="background: #f59e0b;"></div>
+          <div class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
+          <input type="color" id="custom-color" value="#ef4444" class="w-8 h-8 rounded-md cursor-pointer" />
+        </div>
+      </div>
+      
+      <!-- Text Input -->
+      <div>
+        <label class="text-xs font-medium text-gray-700 mb-1 block">Text Label:</label>
+        <input type="text" id="text-input" placeholder="Enter text..." value="Location" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+      </div>
+      
+      <!-- Actions -->
+      <div class="flex gap-2 pt-2 border-t border-gray-300">
+        <button id="share-btn" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium">
+          🔗 Share
+        </button>
+        <button id="clear-all" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium">
+          🗑️ Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <script>
+    // Map initialization
+    let map;
+    let currentTool = "pan";
+    let currentShape = null;
+    let currentColor = "#ef4444";
+    let isDrawing = false;
+    let currentLineCoords = [];
+    let polygonPoints = [];
+    let lineFeatures = [];
+    let shapeFeatures = [];
+    let textMarkers = [];
+    let mapId = null;
+
+    function initMap() {
+      map = L.map('map', {
+        minZoom: 0,
+        maxZoom: 5,
+        center: [0, 0],
+        zoom: 2
+      });
+
+      const bounds = [[-180, -180], [180, 180]];
+      
+      // Using Duke of Sussex GTA V Satellite Map
+      L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
+        minZoom: 0,
+        maxZoom: 5,
+        noWrap: true,
+        attribution: '© Rockstar Games | GTA V UHD Map'
+      }).addTo(map);
+
+      map.setMaxBounds(bounds);
+      map.setView([0, 0], 2);
+
+      setupMapInteractions();
+      initializeStorage();
+    }
+
+    // Storage initialization
+    async function initializeStorage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      mapId = urlParams.get('id') || 'map_' + Date.now();
+
+      try {
+        const stored = await window.storage.get('gta5-map-' + mapId, true);
+        if (stored && stored.value) {
+          const data = JSON.parse(stored.value);
+          if (data.lines) {
+            lineFeatures = data.lines;
+            redrawLines();
+          }
+          if (data.shapes) {
+            shapeFeatures = data.shapes;
+            redrawShapes();
+          }
+          if (data.labels) {
+            data.labels.forEach(label => {
+              createTextMarker(label.lat, label.lng, label.text, label.color, label.id);
+            });
+          }
+        }
+      } catch (e) {
+        console.log('No existing map data');
+      }
+
+      setInterval(syncFromStorage, 5000);
+    }
+
+    async function saveState() {
+      const data = {
+        lines: lineFeatures,
+        shapes: shapeFeatures,
+        labels: textMarkers.map(t => ({
+          id: t.id,
+          lat: t.lat,
+          lng: t.lng,
+          text: t.text,
+          color: t.color
+        }))
+      };
+
+      try {
+        await window.storage.set('gta5-map-' + mapId, JSON.stringify(data), true);
+      } catch (e) {
+        console.error('Save failed:', e);
+      }
+    }
+
+    async function syncFromStorage() {
+      try {
+        const stored = await window.storage.get('gta5-map-' + mapId, true);
+        if (stored && stored.value) {
+          const data = JSON.parse(stored.value);
+          if (data.lines && JSON.stringify(data.lines) !== JSON.stringify(lineFeatures)) {
+            lineFeatures = data.lines;
+            redrawLines();
+          }
+          if (data.shapes && JSON.stringify(data.shapes) !== JSON.stringify(shapeFeatures)) {
+            shapeFeatures = data.shapes;
+            redrawShapes();
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Tool selection
+    function setActiveTool(tool) {
+      currentTool = tool;
+      currentShape = null;
+      polygonPoints = [];
+
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (tool === 'pan') {
+        document.getElementById('tool-pan').classList.add('active');
+        map.dragging.enable();
+      } else {
+        map.dragging.disable();
+        if (tool === 'draw') document.getElementById('tool-draw').classList.add('active');
+        if (tool === 'text') document.getElementById('tool-text').classList.add('active');
+      }
+    }
+
+    function setActiveShape(shape) {
+      currentShape = shape;
+      currentTool = 'shape';
+      polygonPoints = [];
+
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (shape === 'rectangle') document.getElementById('shape-rectangle').classList.add('active');
+      if (shape === 'circle') document.getElementById('shape-circle').classList.add('active');
+      if (shape === 'polygon') document.getElementById('shape-polygon').classList.add('active');
+
+      map.dragging.disable();
+    }
+
+    // Event listeners
+    document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
+    document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
+    document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
+    document.getElementById('shape-rectangle').addEventListener('click', () => setActiveShape('rectangle'));
+    document.getElementById('shape-circle').addEventListener('click', () => setActiveShape('circle'));
+    document.getElementById('shape-polygon').addEventListener('click', () => setActiveShape('polygon'));
+
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        currentColor = swatch.dataset.color;
+        document.getElementById('custom-color').value = currentColor;
+      });
+    });
+
+    document.getElementById('custom-color').addEventListener('input', (e) => {
+      currentColor = e.target.value;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    });
+
+    document.getElementById('clear-all').addEventListener('click', async () => {
+      if (!confirm('Clear all drawings?')) return;
+      lineFeatures = [];
+      shapeFeatures = [];
+      redrawLines();
+      redrawShapes();
+      textMarkers.forEach(t => t.markerInstance.remove());
+      textMarkers = [];
+      await saveState();
+    });
+
+    document.getElementById('share-btn').addEventListener('click', () => {
+      const url = window.location.origin + window.location.pathname + '?id=' + mapId;
+      navigator.clipboard.writeText(url);
+      alert('Share link copied to clipboard!');
+    });
+
+    // Map interactions
+    function setupMapInteractions() {
+      let tempShapeStart = null;
+
+      map.on('mousedown', (e) => {
+        if (currentTool === 'draw') {
+          isDrawing = true;
+          currentLineCoords = [[e.latlng.lat, e.latlng.lng]];
+        } else if (currentTool === 'shape' && (currentShape === 'rectangle' || currentShape === 'circle')) {
+          tempShapeStart = e.latlng;
+        }
+      });
+
+      map.on('mousemove', (e) => {
+        if (isDrawing && currentTool === 'draw') {
+          currentLineCoords.push([e.latlng.lat, e.latlng.lng]);
+          redrawLines(true);
+        }
+      });
+
+      map.on('mouseup', (e) => {
+        if (isDrawing && currentTool === 'draw') {
+          isDrawing = false;
+          if (currentLineCoords.length > 1) {
+            lineFeatures.push({
+              id: 'line-' + Date.now(),
+              coordinates: currentLineCoords,
+              color: currentColor
+            });
+            redrawLines();
+            saveState();
+          }
+          currentLineCoords = [];
+        } else if (tempShapeStart && currentTool === 'shape') {
+          if (currentShape === 'rectangle') {
+            shapeFeatures.push({
+              id: 'rect-' + Date.now(),
+              type: 'rectangle',
+              bounds: [[tempShapeStart.lat, tempShapeStart.lng], [e.latlng.lat, e.latlng.lng]],
+              color: currentColor
+            });
+          } else if (currentShape === 'circle') {
+            const radius = map.distance(tempShapeStart, e.latlng);
+            shapeFeatures.push({
+              id: 'circle-' + Date.now(),
+              type: 'circle',
+              center: [tempShapeStart.lat, tempShapeStart.lng],
+              radius: radius,
+              color: currentColor
+            });
+          }
+          redrawShapes();
+          saveState();
+          tempShapeStart = null;
+        }
+      });
+
+      map.on('click', (e) => {
+        if (currentTool === 'text') {
+          const text = document.getElementById('text-input').value || 'Location';
+          createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
+          saveState();
+        } else if (currentTool === 'shape' && currentShape === 'polygon') {
+          polygonPoints.push([e.latlng.lat, e.latlng.lng]);
+          if (polygonPoints.length >= 3) {
+            setTimeout(() => {
+              if (confirm('Complete polygon?')) {
+                shapeFeatures.push({
+                  id: 'poly-' + Date.now(),
+                  type: 'polygon',
+                  coordinates: polygonPoints,
+                  color: currentColor
+                });
+                redrawShapes();
+                saveState();
+                polygonPoints = [];
+              }
+            }, 100);
+          }
+        }
+      });
+    }
+
+    function redrawLines(includeTemp = false) {
+      map.eachLayer(layer => {
+        if (layer.options && layer.options.isDrawnLine) {
+          map.removeLayer(layer);
+        }
+      });
+
+      lineFeatures.forEach(feature => {
+        L.polyline(feature.coordinates, {
+          color: feature.color,
+          weight: 3,
+          opacity: 0.9,
+          isDrawnLine: true
+        }).addTo(map);
+      });
+
+      if (includeTemp && currentLineCoords.length > 0) {
+        L.polyline(currentLineCoords, {
+          color: currentColor,
+          weight: 3,
+          opacity: 0.6,
+          isDrawnLine: true
+        }).addTo(map);
+      }
+    }
+
+    function redrawShapes() {
+      map.eachLayer(layer => {
+        if (layer.options && layer.options.isDrawnShape) {
+          map.removeLayer(layer);
+        }
+      });
+
+      shapeFeatures.forEach(feature => {
+        let layer;
+        if (feature.type === 'rectangle') {
+          layer = L.rectangle(feature.bounds, {
+            color: feature.color,
+            fillColor: feature.color,
+            fillOpacity: 0.3,
+            weight: 2,
+            isDrawnShape: true
+          });
+        } else if (feature.type === 'circle') {
+          layer = L.circle(feature.center, {
+            radius: feature.radius,
+            color: feature.color,
+            fillColor: feature.color,
+            fillOpacity: 0.3,
+            weight: 2,
+            isDrawnShape: true
+          });
+        } else if (feature.type === 'polygon') {
+          layer = L.polygon(feature.coordinates, {
+            color: feature.color,
+            fillColor: feature.color,
+            fillOpacity: 0.3,
+            weight: 2,
+            isDrawnShape: true
+          });
+        }
+        
+        if (layer) {
+          layer.addTo(map);
+          layer.on('click', () => {
+            if (confirm('Delete this shape?')) {
+              shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
+              redrawShapes();
+              saveState();
+            }
+          });
+        }
+      });
+    }
+
+    function createTextMarker(lat, lng, text, color, idOptional) {
+      const id = idOptional || 'label-' + Date.now();
+
+      const el = document.createElement('div');
+      el.style.cssText = `
+        padding: 6px 12px;
+        background: ${color};
+        color: white;
+        border: 2px solid ${color};
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        cursor: pointer;
+        white-space: nowrap;
+      `;
+      el.textContent = text;
+
+      const marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: '',
+          html: el.outerHTML,
+          iconSize: null,
+          iconAnchor: [0, 0]
+        }),
+        draggable: true
+      }).addTo(map);
+
+      const markerObj = { id, lat, lng, text, color, markerInstance: marker };
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        markerObj.lat = pos.lat;
+        markerObj.lng = pos.lng;
+        saveState();
+      });
+
+      marker.on('click', () => {
+        const action = prompt('Edit text (or DELETE to remove):', markerObj.text);
+        if (action === null) return;
+        if (action.toUpperCase() === 'DELETE') {
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          saveState();
+        } else if (action.trim()) {
+          markerObj.text = action.trim();
+          marker.remove();
+          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          saveState();
+        }
+      });
+
+      textMarkers.push(markerObj);
+      return markerObj;
+    }
+
+    // Sidebar toggle
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    }
+
+    // Category selection (placeholder)
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        alert('Category markers would be shown here: ' + item.dataset.category);
+      });
+    });
+
+    // Initialize
+    initMap();
+  </script>
+</body>
+</html>
