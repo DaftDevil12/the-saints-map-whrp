@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>GTA 5 Interactive Map - Map Genie Style</title>
+  <title>GTA 5 Interactive Map - Shared</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -102,7 +102,7 @@
   <div id="sidebar" class="sidebar">
     <div class="p-4 border-b border-gray-700">
       <h1 class="text-xl font-bold">🗺️ GTA V Map</h1>
-      <p class="text-sm text-gray-400 mt-1">Interactive Collectibles & Drawing</p>
+      <p class="text-sm text-gray-400 mt-1">Interactive Shared Collectibles & Drawing</p>
     </div>
     
     <div id="categories">
@@ -218,8 +218,32 @@
   <!-- Map Container -->
   <div id="map"></div>
 
-  <script>
-    // Map initialization
+  <!-- MAIN SCRIPT WITH FIREBASE (MODULE) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+      authDomain: "the-saints-2f622.firebaseapp.com",
+      projectId: "the-saints-2f622",
+      storageBucket: "the-saints-2f622.firebasestorage.app",
+      messagingSenderId: "131705359242",
+      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+      measurementId: "G-36PY404Q8N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Map + drawing state
     let map;
     let currentTool = "pan";
     let currentShape = null;
@@ -231,6 +255,8 @@
     let shapeFeatures = [];
     let textMarkers = [];
     let mapId = null;
+    let mapDocRef = null;
+    let isApplyingRemote = false; // to avoid weird duplicate re-saves
 
     function initMap() {
       map = L.map('map', {
@@ -246,7 +272,7 @@
 
       const bounds = [[-256, -256], [256, 256]];
       
-      // Using Duke of Sussex GTA V Satellite Map with better settings
+      // Using Duke of Sussex GTA V Satellite Map
       L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
         minZoom: -2,
         maxZoom: 4,
@@ -264,37 +290,55 @@
       initializeStorage();
     }
 
-    // Storage initialization
-    async function initializeStorage() {
-      const urlParams = new URLSearchParams(window.location.search);
-      mapId = urlParams.get('id') || 'map_' + Date.now();
+    // Apply remote Firestore data to the map
+    function applyRemoteData(data) {
+      isApplyingRemote = true;
 
-      try {
-        const stored = await window.storage.get('gta5-map-' + mapId, true);
-        if (stored && stored.value) {
-          const data = JSON.parse(stored.value);
-          if (data.lines) {
-            lineFeatures = data.lines;
-            redrawLines();
-          }
-          if (data.shapes) {
-            shapeFeatures = data.shapes;
-            redrawShapes();
-          }
-          if (data.labels) {
-            data.labels.forEach(label => {
-              createTextMarker(label.lat, label.lng, label.text, label.color, label.id);
-            });
-          }
-        }
-      } catch (e) {
-        console.log('No existing map data');
+      lineFeatures = data.lines || [];
+      shapeFeatures = data.shapes || [];
+
+      // Remove existing text markers from map
+      textMarkers.forEach(t => t.markerInstance.remove());
+      textMarkers = [];
+
+      if (data.labels && Array.isArray(data.labels)) {
+        data.labels.forEach(label => {
+          createTextMarker(label.lat, label.lng, label.text, label.color, label.id);
+        });
       }
 
-      setInterval(syncFromStorage, 5000);
+      redrawLines();
+      redrawShapes();
+
+      isApplyingRemote = false;
     }
 
+    // Firestore initialization + live sync
+    async function initializeStorage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      mapId = urlParams.get('id') || 'default-map';
+      mapDocRef = doc(db, "maps", mapId);
+
+      // Load existing data once
+      const existing = await getDoc(mapDocRef);
+      if (existing.exists()) {
+        applyRemoteData(existing.data());
+      } else {
+        // Create empty doc on first save – no need to do anything now
+      }
+
+      // Live updates from Firestore
+      onSnapshot(mapDocRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+        const data = snapshot.data();
+        applyRemoteData(data);
+      });
+    }
+
+    // Save current map state to Firestore
     async function saveState() {
+      if (!mapDocRef || isApplyingRemote) return;
+
       const data = {
         lines: lineFeatures,
         shapes: shapeFeatures,
@@ -308,27 +352,10 @@
       };
 
       try {
-        await window.storage.set('gta5-map-' + mapId, JSON.stringify(data), true);
+        await setDoc(mapDocRef, data);
       } catch (e) {
         console.error('Save failed:', e);
       }
-    }
-
-    async function syncFromStorage() {
-      try {
-        const stored = await window.storage.get('gta5-map-' + mapId, true);
-        if (stored && stored.value) {
-          const data = JSON.parse(stored.value);
-          if (data.lines && JSON.stringify(data.lines) !== JSON.stringify(lineFeatures)) {
-            lineFeatures = data.lines;
-            redrawLines();
-          }
-          if (data.shapes && JSON.stringify(data.shapes) !== JSON.stringify(shapeFeatures)) {
-            shapeFeatures = data.shapes;
-            redrawShapes();
-          }
-        }
-      } catch (e) {}
     }
 
     // Tool selection
@@ -365,7 +392,7 @@
       map.dragging.disable();
     }
 
-    // Event listeners
+    // Event listeners for toolbar
     document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
     document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
     document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
@@ -388,7 +415,7 @@
     });
 
     document.getElementById('clear-all').addEventListener('click', async () => {
-      if (!confirm('Clear all drawings?')) return;
+      if (!confirm('Clear all drawings? This affects everyone viewing this map.')) return;
       lineFeatures = [];
       shapeFeatures = [];
       redrawLines();
@@ -401,7 +428,7 @@
     document.getElementById('share-btn').addEventListener('click', () => {
       const url = window.location.origin + window.location.pathname + '?id=' + mapId;
       navigator.clipboard.writeText(url);
-      alert('Share link copied to clipboard!');
+      alert('Share link copied to clipboard!\nAnyone with this link sees and shares the same drawings.');
     });
 
     // Map interactions
@@ -424,23 +451,23 @@
         }
       });
 
-      map.on('mouseup', (e) => {
+      map.on('mouseup', async (e) => {
         if (isDrawing && currentTool === 'draw') {
           isDrawing = false;
           if (currentLineCoords.length > 1) {
             lineFeatures.push({
-              id: 'line-' + Date.now(),
+              id: 'line-' + Date.now() + '-' + Math.random().toString(36).slice(2),
               coordinates: currentLineCoords,
               color: currentColor
             });
             redrawLines();
-            saveState();
+            await saveState();
           }
           currentLineCoords = [];
         } else if (tempShapeStart && currentTool === 'shape') {
           if (currentShape === 'rectangle') {
             shapeFeatures.push({
-              id: 'rect-' + Date.now(),
+              id: 'rect-' + Date.now() + '-' + Math.random().toString(36).slice(2),
               type: 'rectangle',
               bounds: [[tempShapeStart.lat, tempShapeStart.lng], [e.latlng.lat, e.latlng.lng]],
               color: currentColor
@@ -448,7 +475,7 @@
           } else if (currentShape === 'circle') {
             const radius = map.distance(tempShapeStart, e.latlng);
             shapeFeatures.push({
-              id: 'circle-' + Date.now(),
+              id: 'circle-' + Date.now() + '-' + Math.random().toString(36).slice(2),
               type: 'circle',
               center: [tempShapeStart.lat, tempShapeStart.lng],
               radius: radius,
@@ -456,29 +483,29 @@
             });
           }
           redrawShapes();
-          saveState();
+          await saveState();
           tempShapeStart = null;
         }
       });
 
-      map.on('click', (e) => {
+      map.on('click', async (e) => {
         if (currentTool === 'text') {
           const text = document.getElementById('text-input').value || 'Location';
           createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
-          saveState();
+          await saveState();
         } else if (currentTool === 'shape' && currentShape === 'polygon') {
           polygonPoints.push([e.latlng.lat, e.latlng.lng]);
           if (polygonPoints.length >= 3) {
-            setTimeout(() => {
+            setTimeout(async () => {
               if (confirm('Complete polygon?')) {
                 shapeFeatures.push({
-                  id: 'poly-' + Date.now(),
+                  id: 'poly-' + Date.now() + '-' + Math.random().toString(36).slice(2),
                   type: 'polygon',
                   coordinates: polygonPoints,
                   color: currentColor
                 });
                 redrawShapes();
-                saveState();
+                await saveState();
                 polygonPoints = [];
               }
             }, 100);
@@ -488,12 +515,14 @@
     }
 
     function redrawLines(includeTemp = false) {
+      // Remove old drawn lines
       map.eachLayer(layer => {
         if (layer.options && layer.options.isDrawnLine) {
           map.removeLayer(layer);
         }
       });
 
+      // Existing features
       lineFeatures.forEach(feature => {
         L.polyline(feature.coordinates, {
           color: feature.color,
@@ -503,6 +532,7 @@
         }).addTo(map);
       });
 
+      // Temp line while drawing
       if (includeTemp && currentLineCoords.length > 0) {
         L.polyline(currentLineCoords, {
           color: currentColor,
@@ -514,6 +544,7 @@
     }
 
     function redrawShapes() {
+      // Remove old shapes
       map.eachLayer(layer => {
         if (layer.options && layer.options.isDrawnShape) {
           map.removeLayer(layer);
@@ -551,11 +582,11 @@
         
         if (layer) {
           layer.addTo(map);
-          layer.on('click', () => {
-            if (confirm('Delete this shape?')) {
+          layer.on('click', async () => {
+            if (confirm('Delete this shape? This removes it for everyone.')) {
               shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
               redrawShapes();
-              saveState();
+              await saveState();
             }
           });
         }
@@ -563,7 +594,7 @@
     }
 
     function createTextMarker(lat, lng, text, color, idOptional) {
-      const id = idOptional || 'label-' + Date.now();
+      const id = idOptional || 'label-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 
       const el = document.createElement('div');
       el.style.cssText = `
@@ -592,26 +623,27 @@
 
       const markerObj = { id, lat, lng, text, color, markerInstance: marker };
 
-      marker.on('dragend', () => {
+      marker.on('dragend', async () => {
         const pos = marker.getLatLng();
         markerObj.lat = pos.lat;
         markerObj.lng = pos.lng;
-        saveState();
+        await saveState();
       });
 
-      marker.on('click', () => {
-        const action = prompt('Edit text (or DELETE to remove):', markerObj.text);
+      marker.on('click', async () => {
+        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
         if (action === null) return;
         if (action.toUpperCase() === 'DELETE') {
           marker.remove();
           textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          saveState();
+          await saveState();
         } else if (action.trim()) {
           markerObj.text = action.trim();
           marker.remove();
-          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
+          // recreate marker with updated text
           textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          saveState();
+          const newMarkerObj = createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
+          await saveState();
         }
       });
 
@@ -620,9 +652,9 @@
     }
 
     // Sidebar toggle
-    function toggleSidebar() {
+    window.toggleSidebar = function () {
       document.getElementById('sidebar').classList.toggle('collapsed');
-    }
+    };
 
     // Category selection (placeholder)
     document.querySelectorAll('.category-item').forEach(item => {
@@ -633,7 +665,7 @@
       });
     });
 
-    // Initialize
+    // Initialize everything
     initMap();
   </script>
 </body>
