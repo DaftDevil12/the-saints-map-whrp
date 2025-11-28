@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>The Saints – Inventory Management</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    background: linear-gradient(to bottom right, #0f172a, #1e293b);
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  #top-watermark {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 120px;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    padding: 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+  }
+
+  .input-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #e2e8f0;
+    width: 100%;
+  }
+
+  .btn-blue {
+    background: #3b82f6;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+  }
+
+  .btn-red {
+    background: #dc2626;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: white;
+  }
+
+  .btn-edit {
+    background: #f59e0b;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: white;
+  }
+
+  .inv-row {
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 8px;
+    padding: 10px;
+  }
+</style>
+</head>
+
+<body>
+
+<img id="top-watermark" src="watermark.png" />
+
+<div class="p-6 max-w-3xl mx-auto">
+
+  <a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
+
+  <h1 class="text-3xl font-bold text-blue-400 mb-6">📦 Inventory Management</h1>
+
+  <!-- Add Item Card -->
+  <div class="card mb-8">
+    <h2 class="text-xl font-semibold mb-3">Add New Item</h2>
+
+    <input id="item-name" class="input-box mb-3" placeholder="Item name (e.g. Lockpick, Ammo Box)">
+    <input id="item-amount" type="number" class="input-box mb-3" placeholder="Amount">
+
+    <button id="add-btn" class="btn-blue w-full">Add Item</button>
+  </div>
+
+  <!-- Item List -->
+  <h2 class="text-xl font-semibold mb-3">Current Inventory</h2>
+
+  <div id="inventory-list" class="space-y-3"></div>
+
+</div>
+
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    deleteField
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+    authDomain: "the-saints-2f622.firebaseapp.com",
+    projectId: "the-saints-2f622",
+    storageBucket: "the-saints-2f622.firebasestorage.app",
+    messagingSenderId: "131705359242",
+    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+    measurementId: "G-36PY404Q8N"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // -------- Role check ----------
+  async function ensureAccess() {
+    const raw = localStorage.getItem("saintsUser");
+    if (!raw) return window.location.href = "login.html";
+
+    let user;
+    try { user = JSON.parse(raw); }
+    catch { return window.location.href = "login.html"; }
+
+    const userRef = doc(db, "users", user.username);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return window.location.href = "login.html";
+
+    const data = snap.data();
+    if (!data.approved) return window.location.href = "awaiting-approval.html";
+
+    if (data.role === "untrusted")
+      return window.location.href = "index.html";
+  }
+
+  await ensureAccess();
+
+  // -------- Inventory Data --------
+  const invRef = doc(db, "inventory", "shared");
+
+  async function loadInventory() {
+    const snap = await getDoc(invRef);
+    const list = document.getElementById("inventory-list");
+
+    list.innerHTML = "";
+
+    if (!snap.exists()) return;
+
+    const items = snap.data();
+
+    for (const [item, amount] of Object.entries(items)) {
+      const row = document.createElement("div");
+      row.className = "inv-row flex justify-between items-center";
+
+      row.innerHTML = `
+        <div>
+          <div class="font-bold">${item}</div>
+          <div class="text-gray-400 text-sm">Amount: ${amount}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-edit" data-item="${item}">Edit</button>
+          <button class="btn-red" data-remove="${item}">Delete</button>
+        </div>
+      `;
+
+      list.appendChild(row);
+    }
+
+    // Delete handler
+    document.querySelectorAll("[data-remove]").forEach(btn => {
+      btn.onclick = async () => {
+        await updateDoc(invRef, {
+          [btn.dataset.remove]: deleteField()
+        });
+        loadInventory();
+      };
+    });
+
+    // Edit handler
+    document.querySelectorAll("[data-item]").forEach(btn => {
+      btn.onclick = async () => {
+        const newAmount = prompt("New amount:");
+        if (!newAmount) return;
+
+        await updateDoc(invRef, {
+          [btn.dataset.item]: Number(newAmount)
+        });
+        loadInventory();
+      };
+    });
+  }
+
+  loadInventory();
+
+  // Add Item
+  document.getElementById("add-btn").onclick = async () => {
+    const name = document.getElementById("item-name").value.trim();
+    const amount = Number(document.getElementById("item-amount").value);
+
+    if (!name || isNaN(amount)) return alert("Enter valid item + amount.");
+
+    await updateDoc(invRef, {
+      [name]: amount
+    }).catch(async () => {
+      await setDoc(invRef, { [name]: amount }, { merge: true });
+    });
+
+    document.getElementById("item-name").value = "";
+    document.getElementById("item-amount").value = "";
+    loadInventory();
+  };
+</script>
+
+</body>
+</html>
