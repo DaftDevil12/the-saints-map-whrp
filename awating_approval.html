@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Awaiting Approval - The Saints</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    background: linear-gradient(180deg, #0b1120, #0d1b2a);
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Orbitron', sans-serif;
+  }
+  .box {
+    background: rgba(0,0,0,0.65);
+    border: 2px solid #1e3a8a;
+    box-shadow: 0px 0px 20px #1e3a8a;
+    backdrop-filter: blur(6px);
+  }
+  #top-logo {
+    width: 150px;
+    opacity: 0.85;
+  }
+  #bottom-watermark {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    color: white;
+    opacity: 0.55;
+  }
+</style>
+
+</head>
+<body class="flex flex-col items-center justify-center">
+
+  <img src="watermark.png" id="top-logo" class="absolute top-8">
+
+  <div class="box p-8 rounded-lg text-white w-96 text-center">
+    <h1 class="text-3xl font-bold mb-6">ACCOUNT PENDING</h1>
+    <p class="mb-4">Your account has been created, but an administrator must approve it before you can access The Saints systems.</p>
+    <p class="opacity-75 text-sm">Please check back later.<br>You may close this page.</p>
+  </div>
+
+  <div id="bottom-watermark">Made by Dante Alberts</div>
+
+</body>
+</html>
