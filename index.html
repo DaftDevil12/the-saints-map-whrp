@@ -1,780 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Wild Haven - The Saints Info</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <style>
-  #watermark {
+<meta charset="UTF-8" />
+<title>The Saints - Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    background: linear-gradient(to bottom right, #0f172a, #1e293b);
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .card {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    transition: 0.2s;
+    backdrop-filter: blur(6px);
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  }
+
+  #top-watermark {
     position: fixed;
-    bottom: 15px;
-    right: 15px;
-    width: 140px;            /* adjust size here */
-    opacity: 0.55;           /* transparency */
-    pointer-events: none;    /* ignore clicks so it doesn't block drawing */
-    z-index: 9999;           /* always on top */
+    top: 20px;
+    right: 20px;
+    width: 120px;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  #bottom-watermark {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.6;
+    font-size: 12px;
+    color: #94a3b8;
   }
 </style>
-
-<img id="watermark" src="watermark.png" alt="Watermark">
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    
-    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; }
-    
-    .sidebar {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 300px;
-      background: #1f2937;
-      color: #fff;
-      overflow-y: auto;
-      z-index: 1000;
-      transition: transform 0.3s;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-    }
-    
-    .sidebar.collapsed { transform: translateX(-300px); }
-    
-    .sidebar-toggle {
-      position: absolute;
-      left: 310px;
-      top: 20px;
-      background: #1f2937;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 0 5px 5px 0;
-      cursor: pointer;
-      z-index: 1001;
-      transition: left 0.3s;
-    }
-    
-    .sidebar.collapsed + .sidebar-toggle { left: 10px; }
-    
-    .toolbar {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 1000;
-      max-width: 350px;
-    }
-    
-    .tool-btn {
-      @apply px-3 py-2 rounded-md text-sm font-medium bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all;
-    }
-    
-    .tool-btn.active {
-      @apply bg-blue-600 text-white ring-2 ring-blue-400;
-    }
-    
-    .category-item {
-      padding: 12px 16px;
-      cursor: pointer;
-      border-bottom: 1px solid #374151;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background 0.2s;
-    }
-    
-    .category-item:hover { background: #374151; }
-    
-    .category-item.active { background: #3b82f6; }
-    
-    .shape-btn {
-      @apply w-10 h-10 flex items-center justify-center rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all cursor-pointer;
-    }
-    
-    .shape-btn.active {
-      @apply bg-purple-600 text-white ring-2 ring-purple-400;
-    }
-    
-    .color-swatch {
-      @apply w-8 h-8 rounded-md cursor-pointer border-2 border-transparent hover:scale-110 transition-transform;
-    }
-    
-    .color-swatch.active {
-      @apply border-white ring-2 ring-white;
-    }
-    
-    .leaflet-container { background: #1a1a1a; }
-  </style>
 </head>
+
 <body>
-  <!-- Sidebar -->
-  <div id="sidebar" class="sidebar">
-    <div class="p-4 border-b border-gray-700">
-      <h1 class="text-xl font-bold">The Saints - Information Map</h1>
-      <p class="text-sm text-gray-400 mt-1">INFORMATION GATHERED BY THE SAINTS DO NOT SHARE</p>
-    </div>
-    
-    <div id="categories">
-      <div class="category-item" data-category="Crafting Locations">
-        <i class="fas fa-gem"></i>
-        <span>Collectibles</span>
-      </div>
-      <div class="category-item" data-category="Drug Processing">
-        <i class="fas fa-gun"></i>
-        <span>Ammu-Nation</span>
-      </div>
-      <div class="category-item" data-category="Other">
-        <i class="fas fa-utensils"></i>
-        <span>Food & Drink</span>
-      </div>
-    </div>
-  </div>
-  
-  <div class="sidebar-toggle" onclick="toggleSidebar()">
-    <i class="fas fa-bars"></i>
-  </div>
 
-  <!-- Drawing Toolbar -->
-  <div class="toolbar">
-    <h3 class="text-lg font-bold mb-3">Drawing Tools</h3>
-    
-    <div class="flex flex-col gap-3">
-      <!-- Tool Selection -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Tool:</label>
-        <div class="flex gap-2">
-          <button id="tool-pan" class="tool-btn active">🖐️ Pan</button>
-          <button id="tool-text" class="tool-btn">📝 Text</button>
-          <button id="tool-draw" class="tool-btn">✏️ Draw</button>
-        </div>
-      </div>
-      
-      <!-- Shape Tools -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Shapes:</label>
-        <div class="flex gap-2">
-          <div id="shape-rectangle" class="shape-btn" title="Rectangle">
-            <i class="fas fa-square"></i>
-          </div>
-          <div id="shape-circle" class="shape-btn" title="Circle">
-            <i class="fas fa-circle"></i>
-          </div>
-          <div id="shape-polygon" class="shape-btn" title="Polygon">
-            <i class="fas fa-draw-polygon"></i>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Color Picker -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Color:</label>
-        <div class="flex gap-2 flex-wrap">
-          <div class="color-swatch active" data-color="#ef4444" style="background: #ef4444;"></div>
-          <div class="color-swatch" data-color="#3b82f6" style="background: #3b82f6;"></div>
-          <div class="color-swatch" data-color="#10b981" style="background: #10b981;"></div>
-          <div class="color-swatch" data-color="#f59e0b" style="background: #f59e0b;"></div>
-          <div class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
-          <input type="color" id="custom-color" value="#ef4444" class="w-8 h-8 rounded-md cursor-pointer" />
-        </div>
-      </div>
-      
-      <!-- Text Input -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Text Label:</label>
-        <input type="text" id="text-input" placeholder="Enter text..." value="Location" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-      </div>
-      
-      <!-- Actions -->
-      <div class="flex gap-2 pt-2 border-t border-gray-300">
-        <button id="share-btn" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium">
-          🔗 Share
-        </button>
-        <button id="clear-all" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium">
-          🗑️ Clear
-        </button>
-      </div>
+<!-- Top Image Watermark -->
+<img id="top-watermark" src="watermark.png" alt="Saints Logo" />
+
+<!-- Bottom Text Watermark -->
+<div id="bottom-watermark">Made by Dante Alberts</div>
+
+<!-- Main Layout -->
+<div class="flex flex-col items-center justify-center h-full px-5">
+
+  <!-- Welcome Box -->
+  <h1 class="text-3xl font-bold text-blue-400 mb-2">Welcome <span id="username"></span></h1>
+  <p class="text-gray-300 mb-10">Select a panel below to begin:</p>
+
+  <!-- Responsive Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+
+    <!-- Shared Map (trusted + admin only) -->
+    <a id="btn-shared" href="sharedmap.html?id=shared" class="card hidden">
+      <h2 class="text-xl font-semibold mb-2 text-blue-300">🌍 Shared Map</h2>
+      <p class="text-gray-400 text-sm">Collaborative map for trusted members.</p>
+    </a>
+
+    <!-- Personal Map (everyone) -->
+    <a id="btn-personal" href="personal-map.html" class="card">
+      <h2 class="text-xl font-semibold mb-2 text-green-300">🗺 Personal Map</h2>
+      <p class="text-gray-400 text-sm">Your own private map.</p>
+    </a>
+
+    <!-- Admin Control Panel (admin only) -->
+    <a id="btn-admin" href="admin.html" class="card hidden">
+      <h2 class="text-xl font-semibold mb-2 text-red-300">🛡 Admin Panel</h2>
+      <p class="text-gray-400 text-sm">Approve users & manage roles.</p>
+    </a>
+
+    <!-- Placeholder -->
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-2">📦 Placeholder</h2>
+      <p class="text-gray-400 text-sm">Future Saints systems will go here.</p>
     </div>
+
   </div>
 
-  <!-- Map Container -->
-  <div id="map"></div>
+  <button id="logout-btn" class="mt-10 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-md text-white">
+    Logout
+  </button>
 
-  <!-- MAIN SCRIPT WITH FIREBASE (MODULE) -->
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    getDoc, 
-    onSnapshot 
-  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+</div>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-    authDomain: "the-saints-2f622.firebaseapp.com",
-    projectId: "the-saints-2f622",
-    storageBucket: "the-saints-2f622.firebasestorage.app",
-    messagingSenderId: "131705359242",
-    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-    measurementId: "G-36PY404Q8N"
-  };
+<script type="module">
+  // Session check
+  const raw = localStorage.getItem("saintsUser");
+  if (!raw) window.location.href = "login.html";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  let currentUser = null;
-
-  async function ensureAccess() {
-    const s = localStorage.getItem("saintsUser");
-    if (!s) {
-      window.location.href = "login.html";
-      return;
-    }
-    let u;
-    try {
-      u = JSON.parse(s);
-    } catch {
-      localStorage.removeItem("saintsUser");
-      window.location.href = "login.html";
-      return;
-    }
-
-    const username = u.username;
-    if (!username) {
-      localStorage.removeItem("saintsUser");
-      window.location.href = "login.html";
-      return;
-    }
-
-    const userRef = doc(db, "users", username);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      alert("User profile missing.");
-      localStorage.removeItem("saintsUser");
-      window.location.href = "login.html";
-      return;
-    }
-
-    const data = snap.data();
-    if (!data.approved) {
-      window.location.href = "awaiting-approval.html";
-      return;
-    }
-
-    const role = data.role || "untrusted";
-    currentUser = { username, role };
-
-    if (role === "untrusted") {
-      // Untrusted go to personal map
-      window.location.href = "personal-map.html";
-      return;
-    }
-
-    // Trusted + Admin can view shared map; continue to init
-    initMap();
+  let user;
+  try {
+    user = JSON.parse(raw);
+  } catch {
+    localStorage.removeItem("saintsUser");
+    window.location.href = "login.html";
   }
 
-  // call this first
-  ensureAccess().catch(err => {
-    console.error(err);
+  document.getElementById("username").textContent = user.username;
+
+  // Role-based visibility
+  if (user.role === "trusted" || user.role === "admin") {
+    document.getElementById("btn-shared").classList.remove("hidden");
+  }
+
+  if (user.role === "admin") {
+    document.getElementById("btn-admin").classList.remove("hidden");
+  }
+
+  // Logout button
+  document.getElementById("logout-btn").onclick = () => {
+    localStorage.removeItem("saintsUser");
     window.location.href = "login.html";
-  });
+  };
+</script>
 
-
-
-    // Map + drawing state
-    let map;
-    let currentTool = "pan";
-    let currentShape = null;
-    let currentColor = "#ef4444";
-    let isDrawing = false;
-    let currentLineCoords = [];   // [{lat, lng}, ...]
-    let polygonPoints = [];       // [{lat, lng}, ...]
-    let lineFeatures = [];        // { id, coordinates: [{lat,lng}], color }
-    let shapeFeatures = [];       // rectangles/circles/polygons with coord objects
-    let textMarkers = [];         // { id, lat, lng, text, color, markerInstance }
-    let mapId = null;
-    let mapDocRef = null;
-    let isApplyingRemote = false; // avoid save loops
-
-    function initMap() {
-      map = L.map('map', {
-        crs: L.CRS.Simple,
-        minZoom: -2,
-        maxZoom: 4,
-        maxNativeZoom: 4,
-        center: [0, 0],
-        zoom: 0,
-        zoomSnap: 0.25,
-        zoomDelta: 0.5
-      });
-
-      const bounds = [[-256, -256], [256, 256]];
-      
-      // Duke of Sussex GTA V Satellite Map
-      L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
-        minZoom: -2,
-        maxZoom: 4,
-        maxNativeZoom: 4,
-        noWrap: true,
-        tileSize: 256,
-        bounds: bounds,
-        attribution: '© Rockstar Games | GTA V UHD Map'
-      }).addTo(map);
-
-      map.setMaxBounds(bounds);
-      map.fitBounds(bounds);
-
-      setupMapInteractions();
-      initializeStorage();
-    }
-
-    // Ensure shapes always use Firestore-safe coordinate structures
-    function fixShapeForFirestore(shape) {
-      const s = { ...shape };
-
-      if (s.type === "rectangle" && Array.isArray(s.bounds)) {
-        s.bounds = s.bounds.map(b => {
-          if (Array.isArray(b)) {
-            return { lat: b[0], lng: b[1] };
-          }
-          return { lat: b.lat, lng: b.lng };
-        });
-      }
-
-      if (s.type === "circle" && s.center) {
-        if (Array.isArray(s.center)) {
-          s.center = { lat: s.center[0], lng: s.center[1] };
-        } else {
-          s.center = { lat: s.center.lat, lng: s.center.lng };
-        }
-      }
-
-      if (s.type === "polygon" && Array.isArray(s.coordinates)) {
-        s.coordinates = s.coordinates.map(p => {
-          if (Array.isArray(p)) {
-            return { lat: p[0], lng: p[1] };
-          }
-          return { lat: p.lat, lng: p.lng };
-        });
-      }
-
-      return s;
-    }
-
-    // Apply remote Firestore data to the map
-    function applyRemoteData(data) {
-      isApplyingRemote = true;
-
-      lineFeatures = Array.isArray(data.lines) ? data.lines : [];
-      shapeFeatures = Array.isArray(data.shapes) ? data.shapes : [];
-
-      // Remove existing text markers from map
-      textMarkers.forEach(t => t.markerInstance.remove());
-      textMarkers = [];
-
-      if (Array.isArray(data.labels)) {
-        data.labels.forEach(label => {
-          createTextMarker(label.lat, label.lng, label.text, label.color, label.id);
-        });
-      }
-
-      redrawLines();
-      redrawShapes();
-
-      isApplyingRemote = false;
-    }
-
-    // Firestore initialization + live sync
-    async function initializeStorage() {
-      const urlParams = new URLSearchParams(window.location.search);
-      mapId = urlParams.get('id') || 'default-map';
-      mapDocRef = doc(db, "maps", mapId);
-
-      // Load existing data once
-      const existing = await getDoc(mapDocRef);
-      if (existing.exists()) {
-        applyRemoteData(existing.data());
-      }
-
-      // Live updates from Firestore
-      onSnapshot(mapDocRef, (snapshot) => {
-        if (!snapshot.exists()) return;
-        const data = snapshot.data();
-        applyRemoteData(data);
-      });
-    }
-
-    // Save current map state to Firestore
-    async function saveState() {
-      if (!mapDocRef || isApplyingRemote) return;
-
-      // Ensure no nested arrays sneak in
-      const safeLines = lineFeatures.map(line => ({
-        ...line,
-        coordinates: Array.isArray(line.coordinates)
-          ? line.coordinates.map(p => ({
-              lat: p.lat,
-              lng: p.lng
-            }))
-          : []
-      }));
-
-      const safeShapes = shapeFeatures.map(shape => fixShapeForFirestore(shape));
-
-      const data = {
-        lines: safeLines,
-        shapes: safeShapes,
-        labels: textMarkers.map(t => ({
-          id: t.id,
-          lat: t.lat,
-          lng: t.lng,
-          text: t.text,
-          color: t.color
-        }))
-      };
-
-      try {
-        await setDoc(mapDocRef, data);
-      } catch (e) {
-        console.error('Save failed:', e);
-      }
-    }
-
-    // Tool selection
-    function setActiveTool(tool) {
-      currentTool = tool;
-      currentShape = null;
-      polygonPoints = [];
-
-      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('active'));
-
-      if (tool === 'pan') {
-        document.getElementById('tool-pan').classList.add('active');
-        map.dragging.enable();
-      } else {
-        map.dragging.disable();
-        if (tool === 'draw') document.getElementById('tool-draw').classList.add('active');
-        if (tool === 'text') document.getElementById('tool-text').classList.add('active');
-      }
-    }
-
-    function setActiveShape(shape) {
-      currentShape = shape;
-      currentTool = 'shape';
-      polygonPoints = [];
-
-      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('active'));
-
-      if (shape === 'rectangle') document.getElementById('shape-rectangle').classList.add('active');
-      if (shape === 'circle') document.getElementById('shape-circle').classList.add('active');
-      if (shape === 'polygon') document.getElementById('shape-polygon').classList.add('active');
-
-      map.dragging.disable();
-    }
-
-    // Event listeners for toolbar
-    document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
-    document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
-    document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
-    document.getElementById('shape-rectangle').addEventListener('click', () => setActiveShape('rectangle'));
-    document.getElementById('shape-circle').addEventListener('click', () => setActiveShape('circle'));
-    document.getElementById('shape-polygon').addEventListener('click', () => setActiveShape('polygon'));
-
-    document.querySelectorAll('.color-swatch').forEach(swatch => {
-      swatch.addEventListener('click', () => {
-        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-        swatch.classList.add('active');
-        currentColor = swatch.dataset.color;
-        document.getElementById('custom-color').value = currentColor;
-      });
-    });
-
-    document.getElementById('custom-color').addEventListener('input', (e) => {
-      currentColor = e.target.value;
-      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-    });
-
-    document.getElementById('clear-all').addEventListener('click', async () => {
-      if (!confirm('Clear all drawings? This affects everyone viewing this map.')) return;
-      lineFeatures = [];
-      shapeFeatures = [];
-      redrawLines();
-      redrawShapes();
-      textMarkers.forEach(t => t.markerInstance.remove());
-      textMarkers = [];
-      await saveState();
-    });
-
-    document.getElementById('share-btn').addEventListener('click', () => {
-      const url = window.location.origin + window.location.pathname + '?id=' + mapId;
-      navigator.clipboard.writeText(url);
-      alert('Share link copied to clipboard!\nAnyone with this link sees and shares the same drawings.');
-    });
-
-    // Map interactions
-    function setupMapInteractions() {
-      let tempShapeStart = null;
-
-      map.on('mousedown', (e) => {
-        if (currentTool === 'draw') {
-          isDrawing = true;
-          currentLineCoords = [{ lat: e.latlng.lat, lng: e.latlng.lng }];
-        } else if (currentTool === 'shape' && (currentShape === 'rectangle' || currentShape === 'circle')) {
-          tempShapeStart = e.latlng;
-        }
-      });
-
-      map.on('mousemove', (e) => {
-        if (isDrawing && currentTool === 'draw') {
-          currentLineCoords.push({ lat: e.latlng.lat, lng: e.latlng.lng });
-          redrawLines(true);
-        }
-      });
-
-      map.on('mouseup', async (e) => {
-        if (isDrawing && currentTool === 'draw') {
-          isDrawing = false;
-          if (currentLineCoords.length > 1) {
-            lineFeatures.push({
-              id: 'line-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-              coordinates: currentLineCoords,
-              color: currentColor
-            });
-            redrawLines();
-            await saveState();
-          }
-          currentLineCoords = [];
-        } else if (tempShapeStart && currentTool === 'shape') {
-          if (currentShape === 'rectangle') {
-            shapeFeatures.push({
-              id: 'rect-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-              type: 'rectangle',
-              bounds: [
-                { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
-                { lat: e.latlng.lat, lng: e.latlng.lng }
-              ],
-              color: currentColor
-            });
-          } else if (currentShape === 'circle') {
-            const radius = map.distance(tempShapeStart, e.latlng);
-            shapeFeatures.push({
-              id: 'circle-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-              type: 'circle',
-              center: { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
-              radius: radius,
-              color: currentColor
-            });
-          }
-          redrawShapes();
-          await saveState();
-          tempShapeStart = null;
-        }
-      });
-
-      map.on('click', async (e) => {
-        if (currentTool === 'text') {
-          const text = document.getElementById('text-input').value || 'Location';
-          createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
-          await saveState();
-        } else if (currentTool === 'shape' && currentShape === 'polygon') {
-          polygonPoints.push({ lat: e.latlng.lat, lng: e.latlng.lng });
-          if (polygonPoints.length >= 3) {
-            setTimeout(async () => {
-              if (confirm('Complete polygon?')) {
-                shapeFeatures.push({
-                  id: 'poly-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-                  type: 'polygon',
-                  coordinates: polygonPoints,
-                  color: currentColor
-                });
-                redrawShapes();
-                await saveState();
-                polygonPoints = [];
-              }
-            }, 100);
-          }
-        }
-      });
-    }
-
-    function redrawLines(includeTemp = false) {
-      // Remove old drawn lines
-      map.eachLayer(layer => {
-        if (layer.options && layer.options.isDrawnLine) {
-          map.removeLayer(layer);
-        }
-      });
-
-      // Existing features
-      lineFeatures.forEach(feature => {
-        if (!Array.isArray(feature.coordinates)) return;
-        const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
-        const layer = L.polyline(latlngs, {
-          color: feature.color,
-          weight: 3,
-          opacity: 0.9,
-          isDrawnLine: true
-        }).addTo(map);
-
-        // delete-on-click for lines
-        layer.on('click', async () => {
-          if (confirm('Delete this line? This removes it for everyone.')) {
-            lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
-            redrawLines();
-            await saveState();
-          }
-        });
-      });
-
-      // Temp line while drawing
-      if (includeTemp && currentLineCoords.length > 0) {
-        const tempLatLngs = currentLineCoords.map(p => [p.lat, p.lng]);
-        L.polyline(tempLatLngs, {
-          color: currentColor,
-          weight: 3,
-          opacity: 0.6,
-          isDrawnLine: true
-        }).addTo(map);
-      }
-    }
-
-    function redrawShapes() {
-      // Remove old shapes
-      map.eachLayer(layer => {
-        if (layer.options && layer.options.isDrawnShape) {
-          map.removeLayer(layer);
-        }
-      });
-
-      shapeFeatures.forEach(feature => {
-        let layer;
-        if (feature.type === 'rectangle' && Array.isArray(feature.bounds) && feature.bounds.length === 2) {
-          const b = feature.bounds;
-          const bounds = [
-            [b[0].lat, b[0].lng],
-            [b[1].lat, b[1].lng]
-          ];
-          layer = L.rectangle(bounds, {
-            color: feature.color,
-            fillColor: feature.color,
-            fillOpacity: 0.3,
-            weight: 2,
-            isDrawnShape: true
-          });
-        } else if (feature.type === 'circle' && feature.center) {
-          const center = [feature.center.lat, feature.center.lng];
-          layer = L.circle(center, {
-            radius: feature.radius,
-            color: feature.color,
-            fillColor: feature.color,
-            fillOpacity: 0.3,
-            weight: 2,
-            isDrawnShape: true
-          });
-        } else if (feature.type === 'polygon' && Array.isArray(feature.coordinates)) {
-          const coords = feature.coordinates.map(p => [p.lat, p.lng]);
-          layer = L.polygon(coords, {
-            color: feature.color,
-            fillColor: feature.color,
-            fillOpacity: 0.3,
-            weight: 2,
-            isDrawnShape: true
-          });
-        }
-        
-        if (layer) {
-          layer.addTo(map);
-          layer.on('click', async () => {
-            if (confirm('Delete this shape? This removes it for everyone.')) {
-              shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
-              redrawShapes();
-              await saveState();
-            }
-          });
-        }
-      });
-    }
-
-    function createTextMarker(lat, lng, text, color, idOptional) {
-      const id = idOptional || 'label-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-
-      const el = document.createElement('div');
-      el.style.cssText = `
-        padding: 6px 12px;
-        background: ${color};
-        color: white;
-        border: 2px solid ${color};
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        cursor: pointer;
-        white-space: nowrap;
-      `;
-      el.textContent = text;
-
-      const marker = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: '',
-          html: el.outerHTML,
-          iconSize: null,
-          iconAnchor: [0, 0]
-        }),
-        draggable: true
-      }).addTo(map);
-
-      const markerObj = { id, lat, lng, text, color, markerInstance: marker };
-
-      marker.on('dragend', async () => {
-        const pos = marker.getLatLng();
-        markerObj.lat = pos.lat;
-        markerObj.lng = pos.lng;
-        await saveState();
-      });
-
-      marker.on('click', async () => {
-        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
-        if (action === null) return;
-        if (action.toUpperCase() === 'DELETE') {
-          marker.remove();
-          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          await saveState();
-        } else if (action.trim()) {
-          markerObj.text = action.trim();
-          marker.remove();
-          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
-          await saveState();
-        }
-      });
-
-      textMarkers.push(markerObj);
-      return markerObj;
-    }
-
-    // Sidebar toggle
-    window.toggleSidebar = function () {
-      document.getElementById('sidebar').classList.toggle('collapsed');
-    };
-
-    // Category selection (placeholder)
-    document.querySelectorAll('.category-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        alert('Category markers would be shown here: ' + item.dataset.category);
-      });
-    });
-
-    // Initialize everything
-    initMap();
-  </script>
 </body>
 </html>
