@@ -52,54 +52,44 @@
 
 <body>
 
-<!-- Top Image Watermark -->
 <img id="top-watermark" src="watermark.png" alt="Saints Logo" />
-
-<!-- Bottom Text Watermark -->
 <div id="bottom-watermark">Made by Dante Alberts</div>
 
-<!-- Main Layout -->
 <div class="flex flex-col items-center justify-center h-full px-5">
 
-  <!-- Welcome Box -->
   <h1 class="text-3xl font-bold text-blue-400 mb-2">Welcome <span id="username"></span></h1>
   <p class="text-gray-300 mb-10">Select a panel below to begin:</p>
 
-  <!-- Responsive Cards -->
+  <!-- FIXED GRID -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
 
-    <!-- Shared Map (trusted + admin only) -->
     <a id="btn-shared" href="sharedmap.html" class="card hidden">
       <h2 class="text-xl font-semibold mb-2 text-blue-300">🌍 Shared Map</h2>
       <p class="text-gray-400 text-sm">Collaborative map for trusted members.</p>
     </a>
 
-    <!-- Personal Map (everyone) -->
     <a id="btn-personal" href="personal-map.html" class="card">
       <h2 class="text-xl font-semibold mb-2 text-green-300">🗺 Personal Map</h2>
       <p class="text-gray-400 text-sm">Your own private map.</p>
     </a>
 
-    <!-- Admin Control Panel (admin only) -->
     <a id="btn-admin" href="admin.html" class="card hidden">
       <h2 class="text-xl font-semibold mb-2 text-red-300">🛡 Admin Panel</h2>
       <p class="text-gray-400 text-sm">Approve users & manage roles.</p>
     </a>
 
-    <!-- Placeholder Card (not inventory) -->
     <a id="btn-inventory" href="inventory.html" class="card hidden">
-      <h2 class="text-xl font-semibold mb-2 text-yellow-300">📦 Placeholder</h2>
-      <p class="text-gray-400 text-sm">Future Saints systems will go here.</p>
-    </div>
+      <h2 class="text-xl font-semibold mb-2 text-yellow-300">📦 Inventory Management</h2>
+      <p class="text-gray-400 text-sm">Manage Saints inventory.</p>
+    </a>
 
     <a id="btn-finances" href="finances.html" class="card hidden">
-  <h2 class="text-xl font-semibold mb-2 text-purple-300">💰 Finances</h2>
-  <p class="text-gray-400 text-sm">View and manage Saints finances.</p>
-</a>
+      <h2 class="text-xl font-semibold mb-2 text-purple-300">💰 Finances</h2>
+      <p class="text-gray-400 text-sm">View & manage Saints finances.</p>
+    </a>
 
   </div>
 
-  <!-- Logout -->
   <button id="logout-btn"
     class="mt-10 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-md text-white">
     Logout
@@ -157,25 +147,25 @@
     const role = data.role || "untrusted";
     document.getElementById("username").textContent = sessionUser.username;
 
-    // Show Shared Map only if trusted or admin
+    // Shared map
     if (role === "trusted" || role === "admin") {
       document.getElementById("btn-shared").classList.remove("hidden");
     }
 
-    // Show Admin Panel for admins only
+    // Admin panel
     if (role === "admin") {
       document.getElementById("btn-admin").classList.remove("hidden");
     }
-      if (role === "trusted" || role === "admin") {
-    document.getElementById("btn-inventory").classList.remove("hidden");
-    document.getElementById("btn-finances").classList.remove("hidden");
-  }
-}
+
+    // Inventory + finances (trusted & admin)
+    if (role === "trusted" || role === "admin") {
+      document.getElementById("btn-inventory").classList.remove("hidden");
+      document.getElementById("btn-finances").classList.remove("hidden");
+    }
   }
 
   loadUser();
 
-  // Logout
   document.getElementById("logout-btn").onclick = () => {
     localStorage.removeItem("saintsUser");
     window.location.href = "login.html";
