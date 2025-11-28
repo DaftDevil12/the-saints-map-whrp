@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Your Personal Saints Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+<style>
+  body { margin: 0; }
+  #map { position:absolute; top:0; bottom:0; left:0; right:0; }
+  #watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 120px;
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 9999;
+  }
+</style>
+
+</head>
+<body>
+
+<img src="watermark.png" id="watermark">
+
+<div id="map"></div>
+
+<script type="module">
+
+/* ------------------ FIREBASE ------------------ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+  authDomain: "the-saints-2f622.firebaseapp.com",
+  projectId: "the-saints-2f622",
+  storageBucket: "the-saints-2f622.appspot.com",
+  messagingSenderId: "131705359242",
+  appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ------------------ USER AUTH (LOCAL ACCOUNT) ------------------ */
+const user = JSON.parse(localStorage.getItem("saintsUser"));
+if (!user) window.location = "login.html";
+
+const username = user.username;
+
+/* ------------------ MAP FIRESTORE REFERENCE ------------------ */
+const mapDocRef = doc(db, "maps/personal", username);
+
+/* ------------------ MAP INIT ------------------ */
+let map;
+let isDrawing = false;
+
+let lineFeatures = [];
+let shapeFeatures = [];
+let textMarkers = [];
+let currentLineCoords = [];
+
+function initMap() {
+  map = L.map("map", {
+    crs: L.CRS.Simple,
+    minZoom: -2,
+    maxZoom: 4,
+    zoom: 0,
+  });
+
+  const bounds = [[-256, -256], [256, 256]];
+
+  L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
+    minZoom: -2,
+    maxZoom: 4,
+    maxNativeZoom: 4,
+    noWrap: true,
+    tileSize: 256,
+    bounds: bounds,
+  }).addTo(map);
+
+  map.setMaxBounds(bounds);
+  map.fitBounds(bounds);
+
+  loadMapData();
+}
+
+async function loadMapData() {
+  const snap = await getDoc(mapDocRef);
+  if (snap.exists()) {
+    const data = snap.data();
+    lineFeatures = data.lines || [];
+    shapeFeatures = data.shapes || [];
+    redraw();
+  }
+
+  // live updates
+  onSnapshot(mapDocRef, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    lineFeatures = data.lines || [];
+    shapeFeatures = data.shapes || [];
+    redraw();
+  });
+}
+
+async function saveState() {
+  await setDoc(mapDocRef, {
+    lines: lineFeatures,
+    shapes: shapeFeatures
+  });
+}
+
+/* ------------------ MAP DRAWING ------------------ */
+
+map?.on("mousedown", (e) => {
+  isDrawing = true;
+  currentLineCoords = [[e.latlng.lat, e.latlng.lng]];
+});
+
+map?.on("mousemove", (e) => {
+  if (!isDrawing) return;
+  currentLineCoords.push([e.latlng.lat, e.latlng.lng]);
+  redraw(true);
+});
+
+map?.on("mouseup", async () => {
+  if (!isDrawing) return;
+  isDrawing = false;
+
+  if (currentLineCoords.length > 1) {
+    lineFeatures.push({
+      id: "line-" + Date.now(),
+      coordinates: currentLineCoords,
+      color: "#00aaff"
+    });
+    await saveState();
+  }
+
+  currentLineCoords = [];
+  redraw();
+});
+
+/* ------------------ REDRAW ------------------ */
+function redraw(includeTemp = false) {
+  map.eachLayer(layer => {
+    if (layer.options?.isDrawLayer) map.removeLayer(layer);
+  });
+
+  lineFeatures.forEach(line => {
+    L.polyline(line.coordinates, {
+      color: line.color,
+      weight: 3,
+      isDrawLayer: true
+    }).addTo(map);
+  });
+
+  if (includeTemp && currentLineCoords.length) {
+    L.polyline(currentLineCoords, {
+      color: "#00aaff",
+      weight: 3,
+      opacity: 0.6,
+      isDrawLayer: true
+    }).addTo(map);
+  }
+}
+
+initMap();
+
+</script>
+
+</body>
+</html>
