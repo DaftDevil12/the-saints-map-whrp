@@ -204,68 +204,87 @@
 
   <!-- MAIN SCRIPT WITH FIREBASE (MODULE) -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { 
-      getFirestore, 
-      doc, 
-      setDoc, 
-      getDoc, 
-      onSnapshot 
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    onSnapshot 
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-      authDomain: "the-saints-2f622.firebaseapp.com",
-      projectId: "the-saints-2f622",
-      storageBucket: "the-saints-2f622.firebasestorage.app",
-      messagingSenderId: "131705359242",
-      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-      measurementId: "G-36PY404Q8N"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+    authDomain: "the-saints-2f622.firebaseapp.com",
+    projectId: "the-saints-2f622",
+    storageBucket: "the-saints-2f622.firebasestorage.app",
+    messagingSenderId: "131705359242",
+    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+    measurementId: "G-36PY404Q8N"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    /* -----------------------------------------------------------
-       🔐 AUTH GUARD: BLOCK MAP UNTIL APPROVED USER LOGGED IN
-    ------------------------------------------------------------*/
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        // User not logged in → redirect
-        window.location.href = "login.html";
-        return;
-      }
+  let currentUser = null;
 
-      // Check Firestore user profile
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
+  async function ensureAccess() {
+    const s = localStorage.getItem("saintsUser");
+    if (!s) {
+      window.location.href = "login.html";
+      return;
+    }
+    let u;
+    try {
+      u = JSON.parse(s);
+    } catch {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+      return;
+    }
 
-      if (!snap.exists()) {
-        alert("Your account profile is missing. Contact an admin.");
-        await signOut(auth);
-        window.location.href = "login.html";
-        return;
-      }
+    const username = u.username;
+    if (!username) {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+      return;
+    }
 
-      const data = snap.data();
+    const userRef = doc(db, "users", username);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) {
+      alert("User profile missing.");
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+      return;
+    }
 
-      if (!data.approved) {
-        alert("Your account is not approved yet.");
-        await signOut(auth);
-        window.location.href = "login.html";
-        return;
-      }
+    const data = snap.data();
+    if (!data.approved) {
+      window.location.href = "awaiting-approval.html";
+      return;
+    }
 
-      // If approved → load your map normally
-      initMap();
-    });
+    const role = data.role || "untrusted";
+    currentUser = { username, role };
+
+    if (role === "untrusted") {
+      // Untrusted go to personal map
+      window.location.href = "personal-map.html";
+      return;
+    }
+
+    // Trusted + Admin can view shared map; continue to init
+    initMap();
+  }
+
+  // call this first
+  ensureAccess().catch(err => {
+    console.error(err);
+    window.location.href = "login.html";
+  });
+
+
 
     // Map + drawing state
     let map;
