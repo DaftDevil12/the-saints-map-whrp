@@ -249,14 +249,14 @@
     let currentShape = null;
     let currentColor = "#ef4444";
     let isDrawing = false;
-    let currentLineCoords = [];
-    let polygonPoints = [];
-    let lineFeatures = [];
-    let shapeFeatures = [];
-    let textMarkers = [];
+    let currentLineCoords = [];   // [{lat, lng}, ...]
+    let polygonPoints = [];       // [{lat, lng}, ...]
+    let lineFeatures = [];        // { id, coordinates: [{lat,lng}], color }
+    let shapeFeatures = [];       // rectangles/circles/polygons with coord objects
+    let textMarkers = [];         // { id, lat, lng, text, color, markerInstance }
     let mapId = null;
     let mapDocRef = null;
-    let isApplyingRemote = false; // to avoid weird duplicate re-saves
+    let isApplyingRemote = false; // avoid save loops
 
     function initMap() {
       map = L.map('map', {
@@ -272,7 +272,7 @@
 
       const bounds = [[-256, -256], [256, 256]];
       
-      // Using Duke of Sussex GTA V Satellite Map
+      // Duke of Sussex GTA V Satellite Map
       L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
         minZoom: -2,
         maxZoom: 4,
@@ -294,14 +294,14 @@
     function applyRemoteData(data) {
       isApplyingRemote = true;
 
-      lineFeatures = data.lines || [];
-      shapeFeatures = data.shapes || [];
+      lineFeatures = Array.isArray(data.lines) ? data.lines : [];
+      shapeFeatures = Array.isArray(data.shapes) ? data.shapes : [];
 
       // Remove existing text markers from map
       textMarkers.forEach(t => t.markerInstance.remove());
       textMarkers = [];
 
-      if (data.labels && Array.isArray(data.labels)) {
+      if (Array.isArray(data.labels)) {
         data.labels.forEach(label => {
           createTextMarker(label.lat, label.lng, label.text, label.color, label.id);
         });
@@ -323,8 +323,6 @@
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
         applyRemoteData(existing.data());
-      } else {
-        // Create empty doc on first save – no need to do anything now
       }
 
       // Live updates from Firestore
@@ -438,7 +436,7 @@
       map.on('mousedown', (e) => {
         if (currentTool === 'draw') {
           isDrawing = true;
-          currentLineCoords = [[e.latlng.lat, e.latlng.lng]];
+          currentLineCoords = [{ lat: e.latlng.lat, lng: e.latlng.lng }];
         } else if (currentTool === 'shape' && (currentShape === 'rectangle' || currentShape === 'circle')) {
           tempShapeStart = e.latlng;
         }
@@ -446,7 +444,7 @@
 
       map.on('mousemove', (e) => {
         if (isDrawing && currentTool === 'draw') {
-          currentLineCoords.push([e.latlng.lat, e.latlng.lng]);
+          currentLineCoords.push({ lat: e.latlng.lat, lng: e.latlng.lng });
           redrawLines(true);
         }
       });
@@ -469,7 +467,10 @@
             shapeFeatures.push({
               id: 'rect-' + Date.now() + '-' + Math.random().toString(36).slice(2),
               type: 'rectangle',
-              bounds: [[tempShapeStart.lat, tempShapeStart.lng], [e.latlng.lat, e.latlng.lng]],
+              bounds: [
+                { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
+                { lat: e.latlng.lat, lng: e.latlng.lng }
+              ],
               color: currentColor
             });
           } else if (currentShape === 'circle') {
@@ -477,7 +478,7 @@
             shapeFeatures.push({
               id: 'circle-' + Date.now() + '-' + Math.random().toString(36).slice(2),
               type: 'circle',
-              center: [tempShapeStart.lat, tempShapeStart.lng],
+              center: { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
               radius: radius,
               color: currentColor
             });
@@ -494,7 +495,7 @@
           createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
           await saveState();
         } else if (currentTool === 'shape' && currentShape === 'polygon') {
-          polygonPoints.push([e.latlng.lat, e.latlng.lng]);
+          polygonPoints.push({ lat: e.latlng.lat, lng: e.latlng.lng });
           if (polygonPoints.length >= 3) {
             setTimeout(async () => {
               if (confirm('Complete polygon?')) {
@@ -524,7 +525,9 @@
 
       // Existing features
       lineFeatures.forEach(feature => {
-        L.polyline(feature.coordinates, {
+        if (!Array.isArray(feature.coordinates)) return;
+        const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
+        L.polyline(latlngs, {
           color: feature.color,
           weight: 3,
           opacity: 0.9,
@@ -534,7 +537,8 @@
 
       // Temp line while drawing
       if (includeTemp && currentLineCoords.length > 0) {
-        L.polyline(currentLineCoords, {
+        const tempLatLngs = currentLineCoords.map(p => [p.lat, p.lng]);
+        L.polyline(tempLatLngs, {
           color: currentColor,
           weight: 3,
           opacity: 0.6,
@@ -553,16 +557,22 @@
 
       shapeFeatures.forEach(feature => {
         let layer;
-        if (feature.type === 'rectangle') {
-          layer = L.rectangle(feature.bounds, {
+        if (feature.type === 'rectangle' && Array.isArray(feature.bounds) && feature.bounds.length === 2) {
+          const b = feature.bounds;
+          const bounds = [
+            [b[0].lat, b[0].lng],
+            [b[1].lat, b[1].lng]
+          ];
+          layer = L.rectangle(bounds, {
             color: feature.color,
             fillColor: feature.color,
             fillOpacity: 0.3,
             weight: 2,
             isDrawnShape: true
           });
-        } else if (feature.type === 'circle') {
-          layer = L.circle(feature.center, {
+        } else if (feature.type === 'circle' && feature.center) {
+          const center = [feature.center.lat, feature.center.lng];
+          layer = L.circle(center, {
             radius: feature.radius,
             color: feature.color,
             fillColor: feature.color,
@@ -570,8 +580,9 @@
             weight: 2,
             isDrawnShape: true
           });
-        } else if (feature.type === 'polygon') {
-          layer = L.polygon(feature.coordinates, {
+        } else if (feature.type === 'polygon' && Array.isArray(feature.coordinates)) {
+          const coords = feature.coordinates.map(p => [p.lat, p.lng]);
+          layer = L.polygon(coords, {
             color: feature.color,
             fillColor: feature.color,
             fillOpacity: 0.3,
@@ -605,68 +616,4 @@
         border-radius: 6px;
         font-size: 13px;
         font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        cursor: pointer;
-        white-space: nowrap;
-      `;
-      el.textContent = text;
-
-      const marker = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: '',
-          html: el.outerHTML,
-          iconSize: null,
-          iconAnchor: [0, 0]
-        }),
-        draggable: true
-      }).addTo(map);
-
-      const markerObj = { id, lat, lng, text, color, markerInstance: marker };
-
-      marker.on('dragend', async () => {
-        const pos = marker.getLatLng();
-        markerObj.lat = pos.lat;
-        markerObj.lng = pos.lng;
-        await saveState();
-      });
-
-      marker.on('click', async () => {
-        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
-        if (action === null) return;
-        if (action.toUpperCase() === 'DELETE') {
-          marker.remove();
-          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          await saveState();
-        } else if (action.trim()) {
-          markerObj.text = action.trim();
-          marker.remove();
-          // recreate marker with updated text
-          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          const newMarkerObj = createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
-          await saveState();
-        }
-      });
-
-      textMarkers.push(markerObj);
-      return markerObj;
-    }
-
-    // Sidebar toggle
-    window.toggleSidebar = function () {
-      document.getElementById('sidebar').classList.toggle('collapsed');
-    };
-
-    // Category selection (placeholder)
-    document.querySelectorAll('.category-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        alert('Category markers would be shown here: ' + item.dataset.category);
-      });
-    });
-
-    // Initialize everything
-    initMap();
-  </script>
-</body>
-</html>
+        box-shadow: 0 2
