@@ -212,6 +212,11 @@
       getDoc, 
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
     // Your Firebase config
     const firebaseConfig = {
@@ -226,6 +231,41 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    /* -----------------------------------------------------------
+       🔐 AUTH GUARD: BLOCK MAP UNTIL APPROVED USER LOGGED IN
+    ------------------------------------------------------------*/
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // User not logged in → redirect
+        window.location.href = "login.html";
+        return;
+      }
+
+      // Check Firestore user profile
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        alert("Your account profile is missing. Contact an admin.");
+        await signOut(auth);
+        window.location.href = "login.html";
+        return;
+      }
+
+      const data = snap.data();
+
+      if (!data.approved) {
+        alert("Your account is not approved yet.");
+        await signOut(auth);
+        window.location.href = "login.html";
+        return;
+      }
+
+      // If approved → load your map normally
+      initMap();
+    });
 
     // Map + drawing state
     let map;
