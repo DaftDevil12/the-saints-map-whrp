@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>The Saints Secure Access</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      @apply bg-black;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 40%, #000000 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .screen-glow {
+      box-shadow: 0 0 80px rgba(56, 189, 248, 0.3);
+    }
+    .scanline-overlay {
+      pointer-events: none;
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05) 1px,
+        rgba(0,0,0,0.2) 2px
+      );
+      background-size: 100% 3px;
+      opacity: 0.25;
+      mix-blend-mode: soft-light;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+
+  <div class="absolute inset-0 bg-gradient-to-br from-black via-slate-900 to-black opacity-70"></div>
+
+  <!-- Main "monitor" container -->
+  <div class="relative z-10 w-full max-w-4xl px-4">
+    <div class="rounded-3xl bg-slate-950/90 border border-cyan-500/40 screen-glow overflow-hidden shadow-2xl">
+      <div class="relative">
+        <!-- fake screen background -->
+        <div class="bg-slate-900/90 h-80 sm:h-[420px] flex items-center justify-center relative overflow-hidden">
+          <!-- scanline effect -->
+          <div class="absolute inset-0 scanline-overlay"></div>
+
+          <!-- login panel -->
+          <div class="relative z-10 w-full max-w-sm bg-slate-950/95 border border-cyan-500/60 rounded-xl px-6 py-6 shadow-lg">
+            
+            <!-- top watermark / logo -->
+            <div class="flex justify-center mb-3">
+              <img src="saints-logo.png" alt="The Saints" class="h-16 object-contain drop-shadow-[0_0_12px_rgba(59,130,246,0.6)]">
+            </div>
+
+            <h2 class="text-center text-sm tracking-[0.25em] text-cyan-300 mb-1">
+              SECURE ACCESS
+            </h2>
+            <h1 class="text-center text-xl font-semibold text-slate-100 mb-4">
+              The Saints Network
+            </h1>
+
+            <!-- toggle login/register -->
+            <div class="flex mb-4 text-xs font-medium">
+              <button id="tab-login" class="flex-1 py-2 border-b-2 border-cyan-400 text-cyan-300">
+                LOG IN
+              </button>
+              <button id="tab-register" class="flex-1 py-2 border-b-2 border-transparent text-slate-400 hover:text-cyan-200">
+                REGISTER
+              </button>
+            </div>
+
+            <!-- status / error text -->
+            <div id="status" class="text-xs text-center text-red-400 min-h-[1.25rem] mb-2"></div>
+
+            <!-- Login form -->
+            <form id="login-form" class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1 uppercase tracking-[0.18em]">Email</label>
+                <input type="email" id="login-email" required
+                  class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1 uppercase tracking-[0.18em]">Password</label>
+                <input type="password" id="login-password" required
+                  class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+              </div>
+              <button type="submit"
+                class="w-full mt-2 py-2.5 bg-red-600 hover:bg-red-500 text-sm font-semibold text-white rounded-md shadow-md transition">
+                LOG IN
+              </button>
+            </form>
+
+            <!-- Register form -->
+            <form id="register-form" class="space-y-3 hidden">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1 uppercase tracking-[0.18em]">Email</label>
+                <input type="email" id="register-email" required
+                  class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1 uppercase tracking-[0.18em]">Password</label>
+                <input type="password" id="register-password" required minlength="6"
+                  class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+              </div>
+              <p class="text-[11px] text-slate-400">
+                After registering, your account must be approved by an administrator before you can access the map.
+              </p>
+              <button type="submit"
+                class="w-full mt-2 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-sm font-semibold text-white rounded-md shadow-md transition">
+                REQUEST ACCESS
+              </button>
+            </form>
+
+            <!-- bottom watermark text -->
+            <div class="mt-4 text-center text-[11px] text-slate-500">
+              Made by <span class="text-slate-300 font-semibold">Dante Alberts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + auth/approval logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { 
+      getFirestore, doc, setDoc, getDoc 
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+      authDomain: "the-saints-2f622.firebaseapp.com",
+      projectId: "the-saints-2f622",
+      storageBucket: "the-saints-2f622.firebasestorage.app",
+      messagingSenderId: "131705359242",
+      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+      measurementId: "G-36PY404Q8N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const statusEl = document.getElementById("status");
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+
+    function setStatus(msg, isError = true) {
+      statusEl.textContent = msg || "";
+      statusEl.className = "text-xs text-center mt-0 mb-2 " + (isError ? "text-red-400" : "text-cyan-300");
+    }
+
+    // tab switching
+    tabLogin.addEventListener("click", () => {
+      tabLogin.classList.add("border-cyan-400","text-cyan-300");
+      tabRegister.classList.remove("border-cyan-400","text-cyan-300");
+      tabRegister.classList.add("text-slate-400");
+      loginForm.classList.remove("hidden");
+      registerForm.classList.add("hidden");
+      setStatus("");
+    });
+
+    tabRegister.addEventListener("click", () => {
+      tabRegister.classList.add("border-cyan-400","text-cyan-300");
+      tabLogin.classList.remove("border-cyan-400","text-cyan-300");
+      tabLogin.classList.add("text-slate-400");
+      registerForm.classList.remove("hidden");
+      loginForm.classList.add("hidden");
+      setStatus("");
+    });
+
+    // Handle registration
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setStatus("Creating account...", false);
+      const email = document.getElementById("register-email").value.trim();
+      const password = document.getElementById("register-password").value;
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+
+        await setDoc(doc(db, "users", uid), {
+          email,
+          role: "user",
+          approved: false,
+          createdAt: new Date().toISOString()
+        });
+
+        await signOut(auth);
+        setStatus("Account created. Waiting for admin approval.", false);
+        registerForm.reset();
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || "Registration failed.");
+      }
+    });
+
+    // Handle login
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setStatus("Checking credentials...", false);
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+        const userDoc = await getDoc(doc(db, "users", uid));
+
+        if (!userDoc.exists()) {
+          setStatus("No user profile found. Please contact an administrator.");
+          await signOut(auth);
+          return;
+        }
+
+        const data = userDoc.data();
+        if (!data.approved) {
+          setStatus("Your account is not approved yet. Please wait for an admin.", true);
+          await signOut(auth);
+          return;
+        }
+
+        // If user is approved:
+        setStatus("Access granted. Redirecting...", false);
+        // If admin, you can optionally send to admin panel instead:
+        if (data.role === "admin") {
+          // Go to admin dashboard first
+          window.location.href = "admin.html";
+        } else {
+          // Normal user → go to map
+          window.location.href = "index.html?id=default-map";
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("Login failed: " + (err.code || err.message));
+      }
+    });
+
+    // If already logged in and approved, redirect automatically
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) return;
+
+        const data = userDoc.data();
+        if (!data.approved) return; // stay on login; show message only on explicit login attempt
+        if (data.role === "admin") {
+          window.location.href = "admin.html";
+        } else {
+          window.location.href = "index.html?id=default-map";
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
