@@ -234,24 +234,31 @@
 
     function initMap() {
       map = L.map('map', {
-        minZoom: 0,
-        maxZoom: 5,
+        crs: L.CRS.Simple,
+        minZoom: -2,
+        maxZoom: 4,
+        maxNativeZoom: 4,
         center: [0, 0],
-        zoom: 2
+        zoom: 0,
+        zoomSnap: 0.25,
+        zoomDelta: 0.5
       });
 
-      const bounds = [[-180, -180], [180, 180]];
+      const bounds = [[-256, -256], [256, 256]];
       
-      // Using Duke of Sussex GTA V Satellite Map
+      // Using Duke of Sussex GTA V Satellite Map with better settings
       L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
-        minZoom: 0,
-        maxZoom: 5,
+        minZoom: -2,
+        maxZoom: 4,
+        maxNativeZoom: 4,
         noWrap: true,
+        tileSize: 256,
+        bounds: bounds,
         attribution: '© Rockstar Games | GTA V UHD Map'
       }).addTo(map);
 
       map.setMaxBounds(bounds);
-      map.setView([0, 0], 2);
+      map.fitBounds(bounds);
 
       setupMapInteractions();
       initializeStorage();
