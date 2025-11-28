@@ -69,7 +69,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
 
     <!-- Shared Map (trusted + admin only) -->
-    <a id="btn-shared" href="sharedmap.html?id=shared" class="card hidden">
+    <a id="btn-shared" href="sharedmap.html" class="card hidden">
       <h2 class="text-xl font-semibold mb-2 text-blue-300">🌍 Shared Map</h2>
       <p class="text-gray-400 text-sm">Collaborative map for trusted members.</p>
     </a>
@@ -101,28 +101,74 @@
 </div>
 
 <script type="module">
+  import {
+    initializeApp
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+
+  import {
+    getFirestore,
+    doc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+    authDomain: "the-saints-2f622.firebaseapp.com",
+    projectId: "the-saints-2f622",
+    storageBucket: "the-saints-2f622.firebasestorage.app",
+    messagingSenderId: "131705359242",
+    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+    measurementId: "G-36PY404Q8N"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   // Session check
   const raw = localStorage.getItem("saintsUser");
   if (!raw) window.location.href = "login.html";
 
-  let user;
+  let sessionUser;
   try {
-    user = JSON.parse(raw);
+    sessionUser = JSON.parse(raw);
   } catch {
     localStorage.removeItem("saintsUser");
     window.location.href = "login.html";
   }
 
-  document.getElementById("username").textContent = user.username;
+  // Load user data from Firestore
+  async function loadUser() {
+    const ref = doc(db, "users", sessionUser.username);
+    const snap = await getDoc(ref);
 
-  // Role-based visibility
-  if (user.role === "trusted" || user.role === "admin") {
-    document.getElementById("btn-shared").classList.remove("hidden");
+    if (!snap.exists()) {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+      return;
+    }
+
+    const data = snap.data();
+
+    if (!data.approved) {
+      window.location.href = "awaiting-approval.html";
+      return;
+    }
+
+    const role = data.role || "untrusted";
+    document.getElementById("username").textContent = sessionUser.username;
+
+    // Show Shared Map only if trusted or admin
+    if (role === "trusted" || role === "admin") {
+      document.getElementById("btn-shared").classList.remove("hidden");
+    }
+
+    // Show admin panel only if admin
+    if (role === "admin") {
+      document.getElementById("btn-admin").classList.remove("hidden");
+    }
   }
 
-  if (user.role === "admin") {
-    document.getElementById("btn-admin").classList.remove("hidden");
-  }
+  loadUser();
 
   // Logout button
   document.getElementById("logout-btn").onclick = () => {
