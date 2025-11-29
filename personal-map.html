@@ -352,37 +352,34 @@ const mapDocRef = doc(db, "personalMaps", mapId);
       window.location.href = "login.html";
     });
 
-    // ---- MAP INIT ----
-    function initMap() {
-      map = L.map('map', {
-        crs: L.CRS.Simple,
-        minZoom: -2,
-        maxZoom: 4,
-        maxNativeZoom: 4,
-        center: [0, 0],
-        zoom: 0,
-        zoomSnap: 0.25,
-        zoomDelta: 0.5
-      });
+function initMap() {
+  map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -2,
+    maxZoom: 4,
+    maxNativeZoom: 4,
+    center: [0, 0],
+    zoom: 0,
+    zoomSnap: 0.25,
+    zoomDelta: 0.5
+  });
 
-      const bounds = [[-256, -256], [256, 256]];
-      
-      // Satellite Map
-      L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
-        minZoom: -2,
-        maxZoom: 4,
-        maxNativeZoom: 4,
-        noWrap: true,
-        tileSize: 256,
-        bounds: bounds,
-        attribution: '© Rockstar Games | GTA V UHD Map'
-      }).addTo(map);
+  const bounds = [[-256, -256], [256, 256]];
 
-      map.setMaxBounds(bounds);
-      map.fitBounds(bounds);
+  L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
+    minZoom: -2,
+    maxZoom: 4,
+    maxNativeZoom: 4,
+    noWrap: true,
+    tileSize: 256,
+    bounds: bounds,
+    attribution: '© Rockstar Games | GTA V UHD Map'
+  }).addTo(map);
 
-      setupMapInteractions();
-    }
+  map.setMaxBounds(bounds);
+  map.fitBounds(bounds);
+}
+
 
     // Ensure shapes always use Firestore-safe coordinate structures
     function fixShapeForFirestore(shape) {
