@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ACCESS DENIED</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      color: #f00;
+      font-family: 'Courier Prime', monospace;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Red grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        transparent 50%,
+        rgba(255, 0, 0, 0.03) 50%
+      );
+      background-size: 100% 4px;
+      animation: scanline 8s linear infinite;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    @keyframes scanline {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100vh); }
+    }
+
+    .container {
+      text-align: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    .bouncing-image {
+      position: fixed;
+      width: 200px;
+      height: 200px;
+      z-index: 50;
+      pointer-events: none;
+      animation: spin 3s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .main-text {
+      font-size: 80px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 
+        0 0 10px #f00,
+        0 0 20px #f00,
+        0 0 30px #f00,
+        0 0 40px #f00;
+      animation: glitchRed 500ms infinite;
+      letter-spacing: 5px;
+    }
+
+    @keyframes glitchRed {
+      0% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 255, 0, 0.75),
+          -0.025em -0.05em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+      14% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 255, 0, 0.75),
+          -0.025em -0.05em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+      15% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 255, 0, 0.75),
+          0.025em 0.025em 0 rgba(255, 0, 0, 0.75),
+          -0.05em -0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+      49% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 255, 0, 0.75),
+          0.025em 0.025em 0 rgba(255, 0, 0, 0.75),
+          -0.05em -0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+      50% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 255, 0, 0.75),
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          0 -0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+      99% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 255, 0, 0.75),
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          0 -0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+      100% {
+        text-shadow: 
+          -0.025em 0 0 rgba(255, 255, 0, 0.75),
+          -0.025em -0.025em 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(255, 0, 255, 0.75);
+      }
+    }
+
+    .magic-word {
+      font-size: 48px;
+      margin: 30px 0;
+      animation: blink 1s step-end infinite;
+      color: #ff0;
+      text-shadow: 0 0 10px #ff0;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .error-details {
+      font-size: 14px;
+      margin: 20px 0;
+      opacity: 0.8;
+      line-height: 1.8;
+    }
+
+    .back-btn {
+      margin-top: 40px;
+      background: transparent;
+      border: 3px solid #f00;
+      color: #f00;
+      padding: 15px 40px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .back-btn:hover {
+      background: #f00;
+      color: #000;
+      box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+      transform: scale(1.05);
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+    }
+
+    .warning-strip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        #000,
+        #000 20px,
+        #f00 20px,
+        #f00 40px
+      );
+      height: 30px;
+      animation: stripScroll 1s linear infinite;
+    }
+
+    @keyframes stripScroll {
+      0% { background-position: 0 0; }
+      100% { background-position: 40px 0; }
+    }
+
+    .warning-strip.bottom {
+      top: auto;
+      bottom: 0;
+    }
+
+    .alert-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% { 
+        transform: scale(1.1);
+        opacity: 0.7;
+      }
+    }
+
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="warning-strip"></div>
+  <div class="warning-strip bottom"></div>
+
+  <img id="bouncing-img" class="bouncing-image" src="denied.png" alt="Access Denied">
+
+  <div class="container">
+    <div class="alert-icon">⚠️</div>
+
+    <div class="main-text">ACCESS DENIED</div>
+
+    <div class="magic-word">YOU DIDN'T SAY THE MAGIC WORD!</div>
+
+    <div class="error-details">
+      <div>ERROR CODE: 403_FORBIDDEN</div>
+      <div>REASON: UNAUTHORIZED ACCESS ATTEMPT</div>
+      <div>SECURITY PROTOCOL: ENGAGED</div>
+      <div>INTRUSION LOGGED: [<span id="timestamp"></span>]</div>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← RETURN TO LOGIN</button>
+  </div>
+
+  <!-- Hidden audio element for optional sound effect -->
+  <audio id="deny-sound" preload="auto">
+    <!-- You can add a beep sound here if you have one -->
+    <!-- <source src="deny.mp3" type="audio/mpeg"> -->
+  </audio>
+
+  <script>
+    // Set timestamp
+    const now = new Date();
+    const timestamp = now.toISOString().replace('T', ' ').substr(0, 19);
+    document.getElementById('timestamp').textContent = timestamp;
+
+    // Bouncing image logic
+    const img = document.getElementById('bouncing-img');
+    let x = Math.random() * (window.innerWidth - 200);
+    let y = Math.random() * (window.innerHeight - 200);
+    let dx = (Math.random() - 0.5) * 6; // Random horizontal speed
+    let dy = (Math.random() - 0.5) * 6; // Random vertical speed
+    const speed = 3; // Base speed multiplier
+
+    // Normalize speed
+    const magnitude = Math.sqrt(dx * dx + dy * dy);
+    dx = (dx / magnitude) * speed;
+    dy = (dy / magnitude) * speed;
+
+    function animate() {
+      // Update position
+      x += dx;
+      y += dy;
+
+      // Bounce off walls
+      if (x <= 0 || x >= window.innerWidth - 200) {
+        dx = -dx;
+        x = Math.max(0, Math.min(x, window.innerWidth - 200));
+      }
+      if (y <= 30 || y >= window.innerHeight - 230) { // Account for warning strips
+        dy = -dy;
+        y = Math.max(30, Math.min(y, window.innerHeight - 230));
+      }
+
+      // Apply position
+      img.style.left = x + 'px';
+      img.style.top = y + 'px';
+
+      requestAnimationFrame(animate);
+    }
+
+    // Start animation
+    animate();
+
+    // Optional: Play sound on load (uncomment if you add a sound file)
+    // document.getElementById('deny-sound').play();
+
+    // Repeat "YOU DIDN'T SAY THE MAGIC WORD!" in console (Easter egg)
+    for (let i = 0; i < 10; i++) {
+      console.log('%c YOU DIDN\'T SAY THE MAGIC WORD! ', 'background: #f00; color: #000; font-size: 20px; font-weight: bold; padding: 10px;');
+    }
+
+    function goBack() {
+      // Try to go back in history, or go to login page
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = 'login.html';
+      }
+    }
+
+    // Optional: Prevent right-click and some keyboard shortcuts
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+        e.preventDefault();
+        console.log('Nice try! But you still didn\'t say the magic word...');
+      }
+    });
+
+    // Shake the page randomly
+    setInterval(() => {
+      if (Math.random() > 0.7) {
+        document.body.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
+        setTimeout(() => {
+          document.body.style.transform = '';
+        }, 100);
+      }
+    }, 2000);
+  </script>
+</body>
+</html>
