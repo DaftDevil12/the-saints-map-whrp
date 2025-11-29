@@ -131,6 +131,7 @@
       max-width: 500px;
       width: 90%;
       padding: 30px;
+      z-index: 10;
     }
 
     .terminal-header {
@@ -212,6 +213,11 @@
       transform: scale(0.98);
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .link {
       color: #0f0;
       text-decoration: none;
@@ -245,6 +251,7 @@
       opacity: 0.3;
       pointer-events: none;
       filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+      z-index: 5;
     }
 
     #bottom-watermark {
@@ -256,12 +263,29 @@
       font-size: 10px;
       color: #0f0;
       letter-spacing: 2px;
+      z-index: 5;
     }
 
     .access-text {
       font-size: 11px;
       opacity: 0.6;
       margin-top: 5px;
+    }
+
+    .error-message {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid #f00;
+      color: #f00;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 12px;
+      text-align: center;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -298,6 +322,8 @@
       [ AUTHENTICATE ]
     </button>
 
+    <div id="error-container"></div>
+
     <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 11px;">
       <a href="register.html" class="link">> NEW_USER.EXE</a>
       <a href="forgot-password.html" class="link">> RESET_ACCESS.SYS</a>
@@ -325,53 +351,90 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    const loginBtn = document.getElementById("login-btn");
+    const errorContainer = document.getElementById("error-container");
+
+    function showError(message) {
+      errorContainer.innerHTML = `<div class="error-message">⚠ ${message}</div>`;
+      setTimeout(() => {
+        errorContainer.innerHTML = '';
+      }, 4000);
+    }
+
     // Add enter key support
     document.getElementById("password").addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
-        document.getElementById("login-btn").click();
+        loginBtn.click();
       }
     });
 
-    document.getElementById("login-btn").onclick = async () => {
+    document.getElementById("username").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("password").focus();
+      }
+    });
+
+    loginBtn.onclick = async () => {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
 
       if (!username || !password) {
-        alert("⚠ ACCESS DENIED: INCOMPLETE CREDENTIALS");
+        showError("ACCESS DENIED: INCOMPLETE CREDENTIALS");
         return;
       }
 
-      const ref = doc(db, "users", username);
-      const snap = await getDoc(ref);
+      // Disable button during authentication
+      loginBtn.disabled = true;
+      loginBtn.textContent = "[ AUTHENTICATING... ]";
 
-      if (!snap.exists()) {
-        alert("⚠ ACCESS DENIED: INVALID CREDENTIALS");
-        return;
-      }
+      try {
+        const ref = doc(db, "users", username);
+        const snap = await getDoc(ref);
 
-      const data = snap.data();
+        if (!snap.exists()) {
+          showError("ACCESS DENIED: INVALID CREDENTIALS");
+          // Redirect to access denied page after showing error
+          setTimeout(() => {
+            window.location.href = "denied.html";
+          }, 1500);
+          return;
+        }
 
-      if (data.password !== password) {
-        alert("⚠ ACCESS DENIED: INVALID CREDENTIALS");
-        return;
-      }
+        const data = snap.data();
 
-      if (!data.approved) {
-        window.location.href = "awaiting-approval.html";
-        return;
-      }
+        if (data.password !== password) {
+          showError("ACCESS DENIED: INVALID CREDENTIALS");
+          // Redirect to access denied page after showing error
+          setTimeout(() => {
+            window.location.href = "denied.html";
+          }, 1500);
+          return;
+        }
 
-      const sessionUser = {
-        username,
-        role: data.role || "untrusted"
-      };
-      localStorage.setItem("saintsUser", JSON.stringify(sessionUser));
+        if (!data.approved) {
+          window.location.href = "awaiting-approval.html";
+          return;
+        }
 
-      // If one-time password: force change
-      if (data.mustChangePassword) {
-        window.location.href = "force-new-password.html";
-      } else {
-        window.location.href = "loading.html";
+        const sessionUser = {
+          username,
+          role: data.role || "untrusted"
+        };
+        localStorage.setItem("saintsUser", JSON.stringify(sessionUser));
+
+        // If one-time password: force change
+        if (data.mustChangePassword) {
+          window.location.href = "force-new-password.html";
+        } else {
+          window.location.href = "loading.html";
+        }
+      } catch (error) {
+        showError("CONNECTION ERROR: NETWORK FAILURE");
+        console.error("Login error:", error);
+      } finally {
+        // Re-enable button
+        loginBtn.disabled = false;
+        loginBtn.textContent = "[ AUTHENTICATE ]";
       }
     };
   </script>
