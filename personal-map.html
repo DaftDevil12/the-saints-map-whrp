@@ -270,8 +270,24 @@
     let textMarkers = [];         // { id, lat, lng, text, color, markerInstance }
     let isApplyingRemote = false; // avoid save loops
 
-    const mapId = "shared";       // fixed shared map document
-    const mapDocRef = doc(db, "maps", mapId);
+    // Get logged in user
+const rawUser = localStorage.getItem("saintsUser");
+if (!rawUser) window.location.href = "login.html";
+
+let user;
+try {
+  user = JSON.parse(rawUser);
+} catch {
+  localStorage.removeItem("saintsUser");
+  window.location.href = "login.html";
+}
+
+// Personal map ID
+const mapId = "personal-" + user.username;
+
+// Personal map document location
+const mapDocRef = doc(db, "personalMaps", mapId);
+
 
     // ---- AUTH / ROLE GUARD ----
     async function ensureAccess() {
