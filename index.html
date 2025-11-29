@@ -466,7 +466,7 @@
 
     <div class="module-grid">
       <!-- Personal Map Module -->
-      <div class="module" onclick="location.href='personalmap.html'">
+      <div class="module" onclick="location.href='personal-map.html'">
         <span class="module-status">PRIVATE</span>
         <span class="module-icon">🗺️</span>
         <div class="module-title">> Personal Map</div>
@@ -536,6 +536,18 @@
           Mission briefings and updates.
         </div>
       </div>
+
+      <!-- Admin Panel Module (Only visible to admins) -->
+      <div class="module" id="admin-module" onclick="location.href='admin.html'" style="display: none;">
+        <span class="module-status">ADMIN ONLY</span>
+        <span class="module-icon">⚙️</span>
+        <div class="module-title">> Admin Panel</div>
+        <div class="module-desc">
+          System administration and user management.
+          Configure permissions and access levels.
+          Monitor network security.
+        </div>
+      </div>
     </div>
 
     <div style="text-align: center; margin-top: 60px; opacity: 0.4; font-size: 11px;">
@@ -580,6 +592,16 @@
     }
     catch { 
       window.location.href = "login.html"; 
+    }
+
+    // Check if user is admin and show admin module
+    const userRef = doc(db, "users", user.username);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      if (userData.role === "admin") {
+        document.getElementById("admin-module").style.display = "block";
+      }
     }
 
     // Count active users (simulate)
