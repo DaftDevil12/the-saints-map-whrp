@@ -142,20 +142,29 @@ function initMap() {
     crs: L.CRS.Simple,
     minZoom: -2,
     maxZoom: 4,
-    zoomSnap: 0.25,
-    zoomDelta: 0.5,
+    maxNativeZoom: 4,
+    center: [0, 0],
     zoom: 0,
-    center: [0,0]
+    zoomSnap: 0.25,
+    zoomDelta: 0.5
   });
 
-  const bounds = [[-256,-256],[256,256]];
+  const bounds = [[-256, -256], [256, 256]];
 
-  L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp',{
-    minZoom:-2, maxZoom:4, noWrap:true, tileSize:256, bounds
+  L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
+    minZoom: -2,
+    maxZoom: 4,
+    maxNativeZoom: 4,
+    noWrap: true,
+    tileSize: 256,
+    bounds: bounds,
+    attribution: '© Rockstar Games | GTA V UHD Map'
   }).addTo(map);
 
   map.setMaxBounds(bounds);
+  map.fitBounds(bounds);
 }
+
 
 // Draw lines
 function redrawLines() {
