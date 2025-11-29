@@ -2,100 +2,205 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>The Saints - Shared Map</title>
+  <title>SAINTS_NETWORK - Shared Intel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; }
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #00ff41 #000;
+    }
+    
+    *::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    *::-webkit-scrollbar-track {
+      background: #000;
+    }
+    
+    *::-webkit-scrollbar-thumb {
+      background: #00ff41;
+      border-radius: 4px;
+    }
+    
+    html, body { 
+      margin: 0; 
+      padding: 0; 
+      height: 100%; 
+      overflow: hidden;
+      background: #000;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    
+    #map { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      bottom: 0; 
+      z-index: 0; 
+    }
     
     .sidebar {
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 300px;
-      background: #1f2937;
-      color: #fff;
+      width: 320px;
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
       overflow-y: auto;
       z-index: 1000;
       transition: transform 0.3s;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+      box-shadow: 2px 0 20px rgba(0, 255, 65, 0.3);
+      border-right: 2px solid #00ff41;
     }
-    .sidebar.collapsed { transform: translateX(-300px); }
+    .sidebar.collapsed { 
+      transform: translateX(-320px); 
+    }
     
     .sidebar-toggle {
       position: absolute;
-      left: 310px;
+      left: 330px;
       top: 20px;
-      background: #1f2937;
-      color: white;
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
       padding: 10px 15px;
       border-radius: 0 5px 5px 0;
       cursor: pointer;
       z-index: 1001;
       transition: left 0.3s;
+      border: 1px solid #00ff41;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
     }
-    .sidebar.collapsed + .sidebar-toggle { left: 10px; }
+    .sidebar-toggle:hover {
+      background: rgba(0, 255, 65, 0.1);
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.8);
+    }
+    .sidebar.collapsed + .sidebar-toggle { 
+      left: 10px; 
+    }
     
     .toolbar {
       position: absolute;
       top: 20px;
       right: 20px;
-      background: white;
-      padding: 15px;
+      background: rgba(0, 0, 0, 0.95);
+      padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0, 255, 65, 0.4);
       z-index: 1000;
       max-width: 350px;
+      border: 2px solid #00ff41;
+      color: #00ff41;
     }
     
     .tool-btn {
-      @apply px-3 py-2 rounded-md text-sm font-medium bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(0, 255, 65, 0.1);
+      color: #00ff41;
+      border: 1px solid #00ff41;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tool-btn:hover {
+      background: rgba(0, 255, 65, 0.2);
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
     }
     .tool-btn.active {
-      @apply bg-blue-600 text-white ring-2 ring-blue-400;
+      background: #00ff41;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.8);
     }
     
     .category-item {
-      padding: 12px 16px;
+      padding: 14px 18px;
       cursor: pointer;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid rgba(0, 255, 65, 0.2);
       display: flex;
       align-items: center;
-      gap: 10px;
-      transition: background 0.2s;
+      gap: 12px;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 13px;
     }
-    .category-item:hover { background: #374151; }
-    .category-item.active { background: #3b82f6; }
+    .category-item:hover { 
+      background: rgba(0, 255, 65, 0.1);
+      border-left: 3px solid #00ff41;
+      padding-left: 15px;
+    }
+    .category-item.active { 
+      background: rgba(0, 255, 65, 0.2);
+      border-left: 3px solid #00ff41;
+      box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.2);
+    }
     
     .shape-btn {
-      @apply w-10 h-10 flex items-center justify-center rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all cursor-pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      background: rgba(0, 255, 65, 0.1);
+      color: #00ff41;
+      border: 1px solid #00ff41;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shape-btn:hover {
+      background: rgba(0, 255, 65, 0.2);
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
     }
     .shape-btn.active {
-      @apply bg-purple-600 text-white ring-2 ring-purple-400;
+      background: #00ff41;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.8);
     }
     
     .color-swatch {
-      @apply w-8 h-8 rounded-md cursor-pointer border-2 border-transparent hover:scale-110 transition-transform;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .color-swatch:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 10px currentColor;
     }
     .color-swatch.active {
-      @apply border-white ring-2 ring-white;
+      border: 2px solid #00ff41;
+      box-shadow: 0 0 15px #00ff41;
     }
     
-    .leaflet-container { background: #1a1a1a; }
+    .leaflet-container { 
+      background: #0a0a0a;
+      filter: brightness(0.7) contrast(1.2);
+    }
 
     #watermark {
       position: fixed;
       bottom: 15px;
       right: 15px;
       width: 140px;
-      opacity: 0.55;
+      opacity: 0.3;
       pointer-events: none;
       z-index: 9999;
+      filter: brightness(0.5) sepia(1) hue-rotate(90deg);
     }
 
     .top-banner {
@@ -103,13 +208,147 @@
       top: 15px;
       left: 20px;
       z-index: 1002;
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 11px;
+      border: 1px solid #00ff41;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+    
+    .toolbar h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+    }
+    
+    .toolbar label {
+      color: #00ff41;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+    
+    .toolbar input[type="text"] {
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #00ff41;
+      color: #00ff41;
       padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      border: 1px solid rgba(59,130,246,0.5);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      border-radius: 4px;
+      width: 100%;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    
+    .toolbar input[type="text"]:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    }
+    
+    .toolbar input[type="text"]::placeholder {
+      color: rgba(0, 255, 65, 0.5);
+    }
+    
+    .toolbar button {
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+      font-size: 11px;
+      padding: 10px 16px;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    
+    #share-btn {
+      background: rgba(0, 255, 65, 0.1);
+      color: #00ff41;
+      border-color: #00ff41;
+    }
+    
+    #share-btn:hover {
+      background: #00ff41;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.8);
+    }
+    
+    #clear-all {
+      background: rgba(255, 0, 0, 0.1);
+      color: #ff0000;
+      border-color: #ff0000;
+    }
+    
+    #clear-all:hover {
+      background: #ff0000;
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+    }
+    
+    .dashboard-link {
+      position: absolute;
+      top: 15px;
+      left: 200px;
+      z-index: 1003;
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 11px;
+      border: 1px solid #00ff41;
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+      cursor: pointer;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      font-family: 'Share Tech Mono', monospace;
+      transition: all 0.2s;
+    }
+    
+    .dashboard-link:hover {
+      background: rgba(0, 255, 65, 0.1);
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.8);
+    }
+    
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+      background: rgba(0, 255, 65, 0.05);
+    }
+    
+    .sidebar-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+      letter-spacing: 2px;
+      margin: 0;
+    }
+    
+    .sidebar-header p {
+      font-size: 10px;
+      color: rgba(0, 255, 65, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 4px 0 0 0;
+    }
+
+    /* Leaflet popup customization */
+    .leaflet-popup-content-wrapper {
+      background: rgba(0, 0, 0, 0.95);
+      color: #00ff41;
+      border: 1px solid #00ff41;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    
+    .leaflet-popup-tip {
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid #00ff41;
     }
   </style>
 </head>
@@ -119,46 +358,32 @@
 
   <!-- Top banner (role label) -->
   <div id="top-banner" class="top-banner">
-    Shared Map (Trusted+)
+    [ TRUSTED_OPERATIVE ]
   </div>
-<a href="index.html"
-   id="dashboard-btn"
-   style="
-      position: absolute;
-      top: 15px;
-      left: 160px;
-      z-index: 1003;
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      border: 1px solid rgba(59,130,246,0.5);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      cursor: pointer;
-      text-decoration: none;
-   ">
-   ⬅ Dashboard
-</a>
+  
+  <a href="index.html" class="dashboard-link">
+    ◄ MAINFRAME
+  </a>
+  
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
-    <div class="p-4 border-b border-gray-700">
-      <h1 class="text-xl font-bold">The Saints - Shared Map</h1>
-      <p class="text-sm text-gray-400 mt-1">Information shared by trusted members.</p>
+    <div class="sidebar-header">
+      <h1>SAINTS_NETWORK</h1>
+      <p>[ SECURE INTEL FEED ]</p>
     </div>
     
     <div id="categories">
       <div class="category-item" data-category="Crafting Locations">
         <i class="fas fa-gem"></i>
-        <span>Collectibles</span>
+        <span>▸ Collectibles</span>
       </div>
       <div class="category-item" data-category="Drug Processing">
         <i class="fas fa-gun"></i>
-        <span>Ammu-Nation</span>
+        <span>▸ Ammu-Nation</span>
       </div>
       <div class="category-item" data-category="Other">
         <i class="fas fa-utensils"></i>
-        <span>Food & Drink</span>
+        <span>▸ Food & Drink</span>
       </div>
     </div>
   </div>
@@ -169,23 +394,23 @@
 
   <!-- Drawing Toolbar -->
   <div class="toolbar">
-    <h3 class="text-lg font-bold mb-3">Shared Drawing Tools</h3>
+    <h3>[ TACTICAL DRAWING ]</h3>
     
-    <div class="flex flex-col gap-3">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
       <!-- Tool Selection -->
       <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Tool:</label>
-        <div class="flex gap-2">
-          <button id="tool-pan" class="tool-btn active">🖐️ Pan</button>
-          <button id="tool-text" class="tool-btn">📝 Text</button>
-          <button id="tool-draw" class="tool-btn">✏️ Draw</button>
+        <label style="display: block; margin-bottom: 6px;">MODE:</label>
+        <div style="display: flex; gap: 8px;">
+          <button id="tool-pan" class="tool-btn active">▣ Pan</button>
+          <button id="tool-text" class="tool-btn">▣ Text</button>
+          <button id="tool-draw" class="tool-btn">▣ Draw</button>
         </div>
       </div>
       
       <!-- Shape Tools -->
       <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Shapes:</label>
-        <div class="flex gap-2">
+        <label style="display: block; margin-bottom: 6px;">SHAPES:</label>
+        <div style="display: flex; gap: 8px;">
           <div id="shape-rectangle" class="shape-btn" title="Rectangle">
             <i class="fas fa-square"></i>
           </div>
@@ -200,30 +425,30 @@
       
       <!-- Color Picker -->
       <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Color:</label>
-        <div class="flex gap-2 flex-wrap">
-          <div class="color-swatch active" data-color="#ef4444" style="background: #ef4444;"></div>
-          <div class="color-swatch" data-color="#3b82f6" style="background: #3b82f6;"></div>
-          <div class="color-swatch" data-color="#10b981" style="background: #10b981;"></div>
-          <div class="color-swatch" data-color="#f59e0b" style="background: #f59e0b;"></div>
-          <div class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
-          <input type="color" id="custom-color" value="#ef4444" class="w-8 h-8 rounded-md cursor-pointer" />
+        <label style="display: block; margin-bottom: 6px;">COLOR:</label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <div class="color-swatch active" data-color="#00ff41" style="background: #00ff41;"></div>
+          <div class="color-swatch" data-color="#ff0000" style="background: #ff0000;"></div>
+          <div class="color-swatch" data-color="#00ffff" style="background: #00ffff;"></div>
+          <div class="color-swatch" data-color="#ffff00" style="background: #ffff00;"></div>
+          <div class="color-swatch" data-color="#ff00ff" style="background: #ff00ff;"></div>
+          <input type="color" id="custom-color" value="#00ff41" style="width: 32px; height: 32px; border-radius: 4px; cursor: pointer; border: 1px solid #00ff41; background: #000;" />
         </div>
       </div>
       
       <!-- Text Input -->
       <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Text Label:</label>
-        <input type="text" id="text-input" placeholder="Enter text..." value="Location" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+        <label style="display: block; margin-bottom: 6px;">LABEL:</label>
+        <input type="text" id="text-input" placeholder="Enter coordinates..." value="OBJECTIVE" />
       </div>
       
       <!-- Actions -->
-      <div class="flex gap-2 pt-2 border-t border-gray-300">
-        <button id="share-btn" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium">
-          🔗 Share
+      <div style="display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(0, 255, 65, 0.3);">
+        <button id="share-btn" style="flex: 1; border-radius: 4px;">
+          ◈ SHARE
         </button>
-        <button id="clear-all" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium">
-          🗑️ Clear
+        <button id="clear-all" style="flex: 1; border-radius: 4px;">
+          ◈ WIPE
         </button>
       </div>
     </div>
@@ -261,16 +486,16 @@
     let map;
     let currentTool = "pan";
     let currentShape = null;
-    let currentColor = "#ef4444";
+    let currentColor = "#00ff41";
     let isDrawing = false;
-    let currentLineCoords = [];   // [{lat, lng}, ...]
-    let polygonPoints = [];       // [{lat, lng}, ...]
-    let lineFeatures = [];        // { id, coordinates: [{lat,lng}], color }
-    let shapeFeatures = [];       // rectangles/circles/polygons with coord objects
-    let textMarkers = [];         // { id, lat, lng, text, color, markerInstance }
-    let isApplyingRemote = false; // avoid save loops
+    let currentLineCoords = [];
+    let polygonPoints = [];
+    let lineFeatures = [];
+    let shapeFeatures = [];
+    let textMarkers = [];
+    let isApplyingRemote = false;
 
-    const mapId = "shared";       // fixed shared map document
+    const mapId = "shared";
     const mapDocRef = doc(db, "maps", mapId);
 
     // ---- AUTH / ROLE GUARD ----
@@ -313,24 +538,21 @@
       const role = data.role || "untrusted";
 
       if (role === "untrusted") {
-        // Untrusted users only get personal map
         window.location.href = "personal-map.html";
         return;
       }
 
-      // Trusted or admin can use shared map
       const banner = document.getElementById("top-banner");
       if (role === "admin") {
-        banner.textContent = `Shared Map - Admin`;
+        banner.textContent = `[ ADMIN_ACCESS::GRANTED ]`;
       } else {
-        banner.textContent = `Shared Map - Trusted`;
+        banner.textContent = `[ TRUSTED_OPERATIVE ]`;
       }
 
       initMap();
       initializeStorage();
     }
 
-    // Ensure access first
     ensureAccess().catch(err => {
       console.error(err);
       window.location.href = "login.html";
@@ -351,7 +573,6 @@
 
       const bounds = [[-256, -256], [256, 256]];
       
-      // Satellite Map
       L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
         minZoom: -2,
         maxZoom: 5,
@@ -368,7 +589,6 @@
       setupMapInteractions();
     }
 
-    // Ensure shapes always use Firestore-safe coordinate structures
     function fixShapeForFirestore(shape) {
       const s = { ...shape };
 
@@ -401,14 +621,12 @@
       return s;
     }
 
-    // Apply remote Firestore data to the map
     function applyRemoteData(data) {
       isApplyingRemote = true;
 
       lineFeatures = Array.isArray(data.lines) ? data.lines : [];
       shapeFeatures = Array.isArray(data.shapes) ? data.shapes : [];
 
-      // Remove existing text markers from map
       textMarkers.forEach(t => t.markerInstance.remove());
       textMarkers = [];
 
@@ -424,14 +642,12 @@
       isApplyingRemote = false;
     }
 
-    // Firestore initialization + live sync
     async function initializeStorage() {
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
         applyRemoteData(existing.data());
       }
 
-      // Live updates from Firestore
       onSnapshot(mapDocRef, (snapshot) => {
         if (!snapshot.exists()) return;
         const data = snapshot.data();
@@ -439,11 +655,9 @@
       });
     }
 
-    // Save current map state to Firestore
     async function saveState() {
       if (!mapDocRef || isApplyingRemote) return;
 
-      // Ensure no nested arrays sneak in
       const safeLines = lineFeatures.map(line => ({
         ...line,
         coordinates: Array.isArray(line.coordinates)
@@ -475,7 +689,6 @@
       }
     }
 
-    // Tool selection
     function setActiveTool(tool) {
       currentTool = tool;
       currentShape = null;
@@ -509,7 +722,6 @@
       if (map) map.dragging.disable();
     }
 
-    // Event listeners for toolbar
     document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
     document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
     document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
@@ -532,7 +744,7 @@
     });
 
     document.getElementById('clear-all').addEventListener('click', async () => {
-      if (!confirm('Clear all drawings on the shared map for everyone?')) return;
+      if (!confirm('[WARNING] Wipe all tactical markers from the network?')) return;
       lineFeatures = [];
       shapeFeatures = [];
       redrawLines();
@@ -545,10 +757,9 @@
     document.getElementById('share-btn').addEventListener('click', () => {
       const url = window.location.origin + window.location.pathname;
       navigator.clipboard.writeText(url);
-      alert('Shared map link copied to clipboard!');
+      alert('[NETWORK LINK COPIED] Share with trusted operatives only.');
     });
 
-    // Map interactions
     function setupMapInteractions() {
       let tempShapeStart = null;
 
@@ -610,14 +821,14 @@
 
       map.on('click', async (e) => {
         if (currentTool === 'text') {
-          const text = document.getElementById('text-input').value || 'Location';
+          const text = document.getElementById('text-input').value || 'OBJECTIVE';
           createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
           await saveState();
         } else if (currentTool === 'shape' && currentShape === 'polygon') {
           polygonPoints.push({ lat: e.latlng.lat, lng: e.latlng.lng });
           if (polygonPoints.length >= 3) {
             setTimeout(async () => {
-              if (confirm('Complete polygon?')) {
+              if (confirm('[CONFIRM] Complete polygon marker?')) {
                 shapeFeatures.push({
                   id: 'poly-' + Date.now() + '-' + Math.random().toString(36).slice(2),
                   type: 'polygon',
@@ -635,7 +846,6 @@
     }
 
     function redrawLines(includeTemp = false) {
-      // Remove old drawn lines
       if (!map) return;
 
       map.eachLayer(layer => {
@@ -644,7 +854,6 @@
         }
       });
 
-      // Existing features
       lineFeatures.forEach(feature => {
         if (!Array.isArray(feature.coordinates)) return;
         const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
@@ -655,9 +864,8 @@
           isDrawnLine: true
         }).addTo(map);
 
-        // delete-on-click for lines
         layer.on('click', async () => {
-          if (confirm('Delete this line from the shared map for everyone?')) {
+          if (confirm('[DELETE TRACE] Remove this tactical line from network?')) {
             lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
             redrawLines();
             await saveState();
@@ -665,7 +873,6 @@
         });
       });
 
-      // Temp line while drawing
       if (includeTemp && currentLineCoords.length > 0) {
         const tempLatLngs = currentLineCoords.map(p => [p.lat, p.lng]);
         L.polyline(tempLatLngs, {
@@ -678,7 +885,6 @@
     }
 
     function redrawShapes() {
-      // Remove old shapes
       if (!map) return;
 
       map.eachLayer(layer => {
@@ -726,7 +932,7 @@
         if (layer) {
           layer.addTo(map);
           layer.on('click', async () => {
-            if (confirm('Delete this shape from the shared map for everyone?')) {
+            if (confirm('[DELETE MARKER] Remove this tactical marker from network?')) {
               shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
               redrawShapes();
               await saveState();
@@ -743,14 +949,17 @@
       el.style.cssText = `
         padding: 6px 12px;
         background: ${color};
-        color: white;
+        color: ${color === '#ffff00' || color === '#00ffff' ? '#000' : '#fff'};
         border: 2px solid ${color};
         border-radius: 6px;
         font-size: 13px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        font-weight: 700;
+        box-shadow: 0 0 15px ${color};
         cursor: pointer;
         white-space: nowrap;
+        font-family: 'Share Tech Mono', monospace;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       `;
       el.textContent = text;
 
@@ -774,9 +983,9 @@
       });
 
       marker.on('click', async () => {
-        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
+        const action = prompt('[EDIT INTEL] Modify label text or type WIPE to remove:', markerObj.text);
         if (action === null) return;
-        if (action.toUpperCase() === 'DELETE') {
+        if (action.toUpperCase() === 'WIPE' || action.toUpperCase() === 'DELETE') {
           marker.remove();
           textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
           await saveState();
@@ -793,17 +1002,15 @@
       return markerObj;
     }
 
-    // Sidebar toggle
     window.toggleSidebar = function () {
       document.getElementById('sidebar').classList.toggle('collapsed');
     };
 
-    // Category selection (placeholder behavior)
     document.querySelectorAll('.category-item').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-        alert('Category markers would be shown here: ' + item.dataset.category);
+        alert('[INTEL CATEGORY] ' + item.dataset.category + ' markers would display here.');
       });
     });
   </script>
