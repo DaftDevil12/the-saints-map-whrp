@@ -2,25 +2,112 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>The Saints - Finances</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
+<title>SAINTS_NET://FINANCES</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
   body {
-    background: linear-gradient(to bottom right, #0f172a, #1e293b);
-    color: #e2e8f0;
-    font-family: 'Inter', sans-serif;
-    height: 100vh;
-    overflow: hidden;
+    background: #000;
+    color: #0f0;
+    font-family: 'Courier Prime', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridScroll 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridScroll {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+  }
+
+  /* Scanline effect */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      transparent 50%,
+      rgba(0, 255, 0, 0.02) 50%
+    );
+    background-size: 100% 4px;
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @keyframes scanline {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(100vh); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    padding: 80px 20px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: transparent;
+    border: 2px solid #0f0;
+    color: #0f0;
+    padding: 10px 20px;
+    font-family: 'Courier Prime', monospace;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 10;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .back-btn:hover {
+    background: #0f0;
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
   }
 
   #top-watermark {
     position: fixed;
     top: 20px;
     right: 20px;
-    width: 120px;
-    opacity: 0.5;
+    width: 100px;
+    opacity: 0.3;
     pointer-events: none;
+    filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+    z-index: 10;
   }
 
   #bottom-watermark {
@@ -28,77 +115,287 @@
     bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    opacity: 0.6;
-    font-size: 12px;
-    color: #94a3b8;
+    opacity: 0.4;
+    font-size: 10px;
+    color: #0f0;
+    letter-spacing: 2px;
+    z-index: 10;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #0f0;
+  }
+
+  .glitch {
+    animation: glitch 500ms infinite;
+  }
+
+  @keyframes glitch {
+    0% {
+      text-shadow: 
+        0.05em 0 0 rgba(255, 0, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+        0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+    }
+    14% {
+      text-shadow: 
+        0.05em 0 0 rgba(255, 0, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+        0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+    }
+    15% {
+      text-shadow: 
+        -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+        0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+        -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+    }
+    49% {
+      text-shadow: 
+        -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+        0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+        -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+    }
+    50% {
+      text-shadow: 
+        0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+        0.05em 0 0 rgba(0, 255, 0, 0.75),
+        0 -0.05em 0 rgba(0, 0, 255, 0.75);
+    }
+    99% {
+      text-shadow: 
+        0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+        0.05em 0 0 rgba(0, 255, 0, 0.75),
+        0 -0.05em 0 rgba(0, 0, 255, 0.75);
+    }
+    100% {
+      text-shadow: 
+        -0.025em 0 0 rgba(255, 0, 0, 0.75),
+        -0.025em -0.025em 0 rgba(0, 255, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 0, 255, 0.75);
+    }
   }
 
   .card {
-    background: rgba(30, 41, 59, 0.85);
-    border: 1px solid rgba(59, 130, 246, 0.4);
+    background: rgba(0, 20, 0, 0.8);
+    border: 2px solid #0f0;
     padding: 20px;
-    border-radius: 12px;
-    backdrop-filter: blur(6px);
+    margin-bottom: 30px;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  }
+
+  .balance-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px;
+  }
+
+  .balance-amount {
+    font-size: 48px;
+    font-weight: bold;
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .positive { color: #0f0; }
+  .negative { color: #f00; text-shadow: 0 0 10px #f00; }
+  .neutral { color: #ff0; text-shadow: 0 0 10px #ff0; }
+
+  input, textarea {
+    background: rgba(0, 20, 0, 0.5);
+    border: 1px solid #0f0;
+    color: #0f0;
+    font-family: 'Courier Prime', monospace;
+    padding: 10px;
+    width: 100%;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+    margin-bottom: 15px;
+  }
+
+  input:focus, textarea:focus {
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    background: rgba(0, 30, 0, 0.7);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: rgba(0, 255, 0, 0.4);
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+  }
+
+  button {
+    background: transparent;
+    border: 2px solid #0f0;
+    color: #0f0;
+    padding: 12px 20px;
+    font-family: 'Courier Prime', monospace;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    width: 100%;
+  }
+
+  button:hover {
+    background: #0f0;
+    color: #000;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
+  .entry-item {
+    background: rgba(0, 30, 0, 0.6);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+  }
+
+  .entry-item:hover {
+    border-color: #0f0;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+  }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .entry-title {
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .entry-amount {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .entry-notes {
+    font-size: 12px;
+    opacity: 0.7;
+    margin: 8px 0;
+    line-height: 1.5;
+  }
+
+  .entry-footer {
+    font-size: 10px;
+    opacity: 0.5;
+    text-align: right;
+  }
+
+  .log-container {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 10px;
+  }
+
+  /* Custom scrollbar */
+  .log-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .log-container::-webkit-scrollbar-track {
+    background: rgba(0, 255, 0, 0.1);
+  }
+
+  .log-container::-webkit-scrollbar-thumb {
+    background: #0f0;
+    box-shadow: 0 0 5px #0f0;
+  }
+
+  .section-title {
+    font-size: 20px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+    padding-bottom: 10px;
+  }
+
+  .blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .status-bar {
+    font-size: 10px;
+    opacity: 0.6;
+    text-align: center;
+    margin-top: 10px;
   }
 </style>
 </head>
 
 <body>
 
-<img id="top-watermark" src="watermark.png">
-<div id="bottom-watermark">Made by Dante Alberts</div>
+<img id="top-watermark" src="watermark.png" alt="Saints Logo">
+<div id="bottom-watermark">[ SYSTEM ARCHITECT: DANTE_ALBERTS ]</div>
 
-<!-- Dashboard -->
-<a href="index.html"
-   class="absolute top-5 left-5 bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-md text-sm border border-blue-400 shadow-xl">
-⬅ Dashboard
-</a>
+<a href="index.html" class="back-btn">⬅ MAINFRAME</a>
 
-<div class="flex flex-col items-center pt-20 px-5">
-
-  <h1 class="text-3xl font-bold text-blue-400 mb-2">💰 Saints Finances</h1>
-  <p class="text-gray-400 mb-6">View and manage financial entries</p>
+<div class="container">
+  <div class="header">
+    <h1 class="glitch" style="font-size: 42px; margin-bottom: 10px;">💰 FINANCIAL_LEDGER</h1>
+    <p style="font-size: 12px; opacity: 0.7; letter-spacing: 2px;">RESOURCE TRACKING & TRANSACTION LOG</p>
+  </div>
 
   <!-- Total Balance Display -->
-  <div class="card w-full max-w-xl mb-6">
-    <div class="flex justify-between items-center">
-      <h2 class="text-xl font-semibold">Current Balance</h2>
-      <p id="total-balance" class="text-3xl font-bold">$0</p>
+  <div class="card balance-card">
+    <div>
+      <div style="font-size: 14px; opacity: 0.7; margin-bottom: 5px;">> CURRENT_BALANCE</div>
+      <div class="status-bar"><span class="blink">█</span> LIVE SYNC ACTIVE</div>
     </div>
+    <div id="total-balance" class="balance-amount neutral">£0</div>
   </div>
 
   <!-- Add Entry (trusted/admin only) -->
-  <div id="add-section" class="card w-full max-w-xl mb-8 hidden">
-    <h2 class="text-xl font-semibold mb-3">Add Entry</h2>
+  <div id="add-section" class="card" style="display: none;">
+    <div class="section-title">> NEW_TRANSACTION</div>
 
-    <div class="flex flex-col gap-3">
+    <div>
+      <label>> TITLE</label>
+      <input id="entry-title" placeholder="e.g. AMMO_PURCHASE, HEIST_INCOME">
 
-      <input id="entry-title"
-             class="px-3 py-2 rounded-md bg-gray-700 border border-gray-600"
-             placeholder="Title (e.g. Ammo Purchase)">
+      <label>> AMOUNT</label>
+      <input id="entry-amount" placeholder="-500 (expense) or +1200 (income)">
 
-      <input id="entry-amount"
-             class="px-3 py-2 rounded-md bg-gray-700 border border-gray-600"
-             placeholder="Amount (e.g. -500 or +1200)">
+      <label>> NOTES [OPTIONAL]</label>
+      <textarea id="entry-notes" placeholder="Additional details..." rows="3"></textarea>
 
-      <textarea id="entry-notes"
-                class="px-3 py-2 rounded-md bg-gray-700 border border-gray-600"
-                placeholder="Notes (optional)"
-                rows="3"></textarea>
-
-      <button id="add-entry-btn"
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md">
-        ➕ Add Entry
-      </button>
+      <button id="add-entry-btn">[ LOG TRANSACTION ]</button>
     </div>
   </div>
 
   <!-- Finance Log -->
-  <div class="card w-full max-w-3xl overflow-y-auto" style="max-height: 60vh;">
-    <h2 class="text-2xl font-semibold mb-4">Finance Log</h2>
-
-    <div id="finance-list" class="flex flex-col gap-4">
-      <p class="text-gray-500">Loading...</p>
+  <div class="card">
+    <div class="section-title">> TRANSACTION_HISTORY</div>
+    
+    <div id="finance-list" class="log-container">
+      <p style="opacity: 0.5; text-align: center;">Loading data<span class="blink">...</span></p>
     </div>
   </div>
 
@@ -150,7 +447,7 @@
     const role = snap.data().role || "untrusted";
 
     if (role === "trusted" || role === "admin") {
-      document.getElementById("add-section").classList.remove("hidden");
+      document.getElementById("add-section").style.display = "block";
     }
   }
 
@@ -169,9 +466,9 @@
     let total = 0;
     
     if (snapshot.empty) {
-      listEl.innerHTML = `<p class="text-gray-500">No entries yet.</p>`;
-      totalEl.textContent = "$0";
-      totalEl.className = "text-3xl font-bold text-gray-400";
+      listEl.innerHTML = `<p style="opacity: 0.5; text-align: center;">NO TRANSACTIONS LOGGED</p>`;
+      totalEl.textContent = "£0";
+      totalEl.className = "balance-amount neutral";
       return;
     }
 
@@ -179,31 +476,32 @@
       const f = doc.data();
       total += f.amount;
 
-      const color = f.amount >= 0 ? "text-green-400" : "text-red-400";
+      const color = f.amount >= 0 ? "positive" : "negative";
+      const sign = f.amount >= 0 ? "+" : "";
 
       const item = document.createElement("div");
-      item.className = "p-4 rounded-md bg-gray-800 border border-gray-700";
+      item.className = "entry-item";
 
       item.innerHTML = `
-        <div class="flex justify-between">
-          <h3 class="text-xl font-bold">${f.title}</h3>
-          <p class="font-bold ${color}">${f.amount >= 0 ? '+' : ''}${f.amount}</p>
+        <div class="entry-header">
+          <div class="entry-title">${f.title}</div>
+          <div class="entry-amount ${color}">${sign}£${Math.abs(f.amount).toLocaleString()}</div>
         </div>
-        <p class="text-gray-400 text-sm mt-1">${f.notes || ""}</p>
-        <p class="text-xs text-gray-500 mt-2">Added by: ${f.author}</p>
+        ${f.notes ? `<div class="entry-notes">> ${f.notes}</div>` : ''}
+        <div class="entry-footer">LOGGED BY: ${f.author.toUpperCase()}</div>
       `;
 
       listEl.appendChild(item);
     });
 
     // Update total display
-    totalEl.textContent = `$${total.toLocaleString()}`;
+    totalEl.textContent = `£${total.toLocaleString()}`;
     if (total > 0) {
-      totalEl.className = "text-3xl font-bold text-green-400";
+      totalEl.className = "balance-amount positive";
     } else if (total < 0) {
-      totalEl.className = "text-3xl font-bold text-red-400";
+      totalEl.className = "balance-amount negative";
     } else {
-      totalEl.className = "text-3xl font-bold text-gray-400";
+      totalEl.className = "balance-amount neutral";
     }
   });
 
@@ -214,22 +512,34 @@
     const notes = document.getElementById("entry-notes").value.trim();
 
     if (!title || isNaN(amount)) {
-      alert("Please enter a valid title and numeric amount.");
+      alert("⚠ ERROR: INVALID TITLE OR AMOUNT");
       return;
     }
 
-    await addDoc(collection(db, "finances"), {
-      title: title,
-      amount: amount,
-      notes: notes,
-      author: user.username,
-      timestamp: Date.now()
-    });
+    const btn = document.getElementById("add-entry-btn");
+    btn.textContent = "[ LOGGING... ]";
+    btn.disabled = true;
 
-    // Clear input
-    document.getElementById("entry-title").value = "";
-    document.getElementById("entry-amount").value = "";
-    document.getElementById("entry-notes").value = "";
+    try {
+      await addDoc(collection(db, "finances"), {
+        title: title,
+        amount: amount,
+        notes: notes,
+        author: user.username,
+        timestamp: Date.now()
+      });
+
+      // Clear input
+      document.getElementById("entry-title").value = "";
+      document.getElementById("entry-amount").value = "";
+      document.getElementById("entry-notes").value = "";
+    } catch (error) {
+      alert("⚠ ERROR: TRANSACTION FAILED");
+      console.error(error);
+    } finally {
+      btn.textContent = "[ LOG TRANSACTION ]";
+      btn.disabled = false;
+    }
   };
 </script>
 
