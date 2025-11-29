@@ -328,8 +328,10 @@ async function ensureAccess() {
   const banner = document.getElementById("top-banner");
   banner.textContent = `Personal Map - ${sessionUser.username}`;
 
-  initMap();
-  initializeStorage();
+initMap();
+setupMapInteractions();   // Drawing now works
+initializeStorage();
+
 }
 
 
