@@ -258,10 +258,10 @@
     <button class="back-btn" onclick="goBack()">← RETURN TO LOGIN</button>
   </div>
 
-  <!-- Hidden audio element for optional sound effect -->
-  <audio id="deny-sound" preload="auto">
-    <!-- You can add a beep sound here if you have one -->
-    <source src="deny.mp3" type="audio/mpeg">
+  <!-- Audio element for "magic word" sound -->
+  <audio id="deny-sound" preload="auto" loop>
+    <source src="magic-word.mp3" type="audio/mpeg">
+    <source src="magic-word.ogg" type="audio/ogg">
   </audio>
 
   <script>
@@ -308,8 +308,17 @@
     // Start animation
     animate();
 
-    // Optional: Play sound on load (uncomment if you add a sound file)
-    // document.getElementById('deny-sound').play();
+    // Play sound on load with user interaction fallback
+    const sound = document.getElementById('deny-sound');
+    sound.volume = 0.5; // Set to 50% volume
+    
+    // Try to play immediately
+    sound.play().catch(() => {
+      // If autoplay is blocked, play on first click
+      document.addEventListener('click', () => {
+        sound.play();
+      }, { once: true });
+    });
 
     // Repeat "YOU DIDN'T SAY THE MAGIC WORD!" in console (Easter egg)
     for (let i = 0; i < 10; i++) {
