@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SAINTS_NET://AUTHENTICATING</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        transparent 50%,
+        rgba(0, 255, 0, 0.02) 50%
+      );
+      background-size: 100% 4px;
+      animation: scanline 8s linear infinite;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    @keyframes scanline {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100vh); }
+    }
+
+    .terminal {
+      width: 90%;
+      max-width: 800px;
+      height: 80vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .code-line {
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre;
+      opacity: 0;
+      animation: fadeIn 0.1s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 16px;
+      background: #0f0;
+      animation: blink 1s step-end infinite;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .access-granted {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 60px;
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 
+        0 0 10px #0f0,
+        0 0 20px #0f0,
+        0 0 30px #0f0,
+        0 0 40px #0f0;
+      animation: accessGranted 2s ease-out forwards;
+      opacity: 0;
+      z-index: 10;
+    }
+
+    @keyframes accessGranted {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .glitch {
+      animation: glitch 500ms infinite;
+    }
+
+    @keyframes glitch {
+      0% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      14% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      15% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      49% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      50% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      99% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      100% {
+        text-shadow: 
+          -0.025em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+    }
+
+    .fade-out {
+      animation: fadeOut 1s forwards;
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal" id="terminal"></div>
+  <div class="access-granted" id="access-msg" style="display: none;">
+    <div class="glitch">ACCESS</div>
+    <div class="glitch" style="color: #ff0;">GRANTED</div>
+  </div>
+
+  <script>
+    const terminal = document.getElementById('terminal');
+    const accessMsg = document.getElementById('access-msg');
+
+    // Get username from localStorage
+    const raw = localStorage.getItem("saintsUser");
+    let username = "UNKNOWN";
+    if (raw) {
+      try {
+        const user = JSON.parse(raw);
+        username = user.username.toUpperCase();
+      } catch (e) {}
+    }
+
+    const codeLines = [
+      '> INITIATING SECURE CONNECTION...',
+      '> CONNECTING TO SAINTS NETWORK NODE...',
+      '[OK] Connection established: 192.168.0.1:8443',
+      '',
+      '> LOADING ENCRYPTION MODULES...',
+      '[INFO] RSA-4096 encryption initialized',
+      '[INFO] AES-256-GCM cipher active',
+      '[OK] Secure channel established',
+      '',
+      '> AUTHENTICATING USER CREDENTIALS...',
+      `[INFO] Username: ${username}`,
+      '[INFO] Password hash: ████████████████████',
+      '[INFO] Verifying against database...',
+      '[OK] Credentials validated',
+      '',
+      '> CHECKING USER PERMISSIONS...',
+      '[INFO] Querying role database...',
+      '[INFO] Loading access control list...',
+      '[OK] Permissions verified',
+      '',
+      '> ESTABLISHING SESSION...',
+      '[INFO] Generating session token...',
+      '[INFO] Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      '[OK] Session token generated',
+      '',
+      '> LOADING USER ENVIRONMENT...',
+      '[INFO] Fetching user preferences...',
+      '[INFO] Loading dashboard modules...',
+      '[INFO] Initializing real-time sync...',
+      '[OK] Environment ready',
+      '',
+      '> FINAL SECURITY CHECKS...',
+      '[INFO] Verifying device fingerprint...',
+      '[INFO] Checking for suspicious activity...',
+      '[INFO] Validating session integrity...',
+      '[OK] All security checks passed',
+      '',
+      '> AUTHENTICATION SEQUENCE COMPLETE',
+      '> GRANTING ACCESS TO MAINFRAME...',
+      ''
+    ];
+
+    let lineIndex = 0;
+    let charIndex = 0;
+    let currentLine = '';
+
+    function typeCode() {
+      if (lineIndex >= codeLines.length) {
+        // Show ACCESS GRANTED message
+        setTimeout(() => {
+          terminal.classList.add('fade-out');
+          accessMsg.style.display = 'block';
+          
+          // Redirect to index.html after 2 seconds
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 2000);
+        }, 500);
+        return;
+      }
+
+      const line = codeLines[lineIndex];
+      
+      if (charIndex < line.length) {
+        currentLine += line[charIndex];
+        charIndex++;
+        
+        // Update current line
+        const lines = terminal.querySelectorAll('.code-line');
+        if (lines.length > 0) {
+          lines[lines.length - 1].textContent = currentLine;
+        }
+        
+        // Random speed for typing effect
+        const speed = Math.random() * 20 + 5;
+        setTimeout(typeCode, speed);
+      } else {
+        // Line complete, move to next
+        lineIndex++;
+        charIndex = 0;
+        currentLine = '';
+        
+        // Add new line
+        const newLine = document.createElement('div');
+        newLine.className = 'code-line';
+        terminal.appendChild(newLine);
+        
+        // Auto-scroll
+        terminal.scrollTop = terminal.scrollHeight;
+        
+        // Pause between lines
+        setTimeout(typeCode, Math.random() * 100 + 50);
+      }
+    }
+
+    // Start the animation
+    const firstLine = document.createElement('div');
+    firstLine.className = 'code-line';
+    terminal.appendChild(firstLine);
+    
+    setTimeout(typeCode, 500);
+  </script>
+</body>
+</html>
