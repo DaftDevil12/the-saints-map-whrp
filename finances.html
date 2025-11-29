@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>The Saints – Finances</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    background: linear-gradient(to bottom right, #0f172a, #1e293b);
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  #top-watermark {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 120px;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    padding: 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+  }
+
+  .input-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #e2e8f0;
+    width: 100%;
+  }
+
+  .btn-blue {
+    background: #3b82f6;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+  }
+  .btn-blue:hover { background: #2563eb; }
+
+  .btn-red {
+    background: #dc2626;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: white;
+  }
+  .btn-red:hover { background: #b91c1c; }
+
+  .entry {
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 8px;
+    padding: 10px;
+  }
+</style>
+</head>
+
+<body>
+
+<img id="top-watermark" src="watermark.png" />
+
+<div class="p-6 max-w-3xl mx-auto">
+
+  <a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
+
+  <h1 class="text-3xl font-bold text-blue-400 mb-6">💰 Saints Finances</h1>
+
+  <!-- Balance -->
+  <div class="card mb-8">
+    <h2 class="text-xl font-semibold mb-2">Current Total</h2>
+    <div id="total" class="text-3xl font-bold text-green-400">£0</div>
+  </div>
+
+  <!-- Add Finance (ADMIN ONLY) -->
+  <div id="admin-controls" class="card mb-8 hidden">
+    <h2 class="text-xl font-semibold mb-3">Add Transaction</h2>
+
+    <input id="fin-desc" class="input-box mb-3" placeholder="Description (e.g. Drug Sale, Equipment Purchase)">
+    <input id="fin-amount" type="number" class="input-box mb-3" placeholder="Amount (+ income | - expense)">
+
+    <button id="add-btn" class="btn-blue w-full">Add Entry</button>
+  </div>
+
+  <h2 class="text-xl font-semibold mb-3">Transaction History</h2>
+
+  <div id="finance-list" class="space-y-3"></div>
+
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    updateDoc,
+    setDoc,
+    deleteField
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+    authDomain: "the-saints-2f622.firebaseapp.com",
+    projectId: "the-saints-2f622",
+    storageBucket: "the-saints-2f622.firebasestorage.app",
+    messagingSenderId: "131705359242",
+    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+    measurementId: "G-36PY404Q8N"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ---------- Role Check ----------
+  async function ensureAccess() {
+    const raw = localStorage.getItem("saintsUser");
+    if (!raw) return window.location.href = "login.html";
+
+    let user;
+    try { user = JSON.parse(raw); }
+    catch { return window.location.href = "login.html"; }
+
+    const userRef = doc(db, "users", user.username);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return window.location.href = "login.html";
+
+    const data = snap.data();
+
+    if (!data.approved) return window.location.href = "awaiting-approval.html";
+
+    const role = data.role || "untrusted";
+
+    // Admins can add entries
+    if (role === "admin") {
+      document.getElementById("admin-controls").classList.remove("hidden");
+    }
+  }
+
+  await ensureAccess();
+
+  // ---------- Finance Document ----------
+  const finRef = doc(db, "finances", "saints");
+
+  async function loadFinances() {
+    const list = document.getElementById("finance-list");
+    list.innerHTML = "";
+
+    const snap = await getDoc(finRef);
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    let total = 0;
+
+    for (const [id, entry] of Object.entries(data)) {
+      total += entry.amount;
+
+      const row = document.createElement("div");
+      row.className = "entry flex justify-between items-center";
+
+      const amountColor = entry.amount >= 0 ? "text-green-400" : "text-red-400";
+
+      row.innerHTML = `
+        <div>
+          <div class="font-bold">${entry.desc}</div>
+          <div class="${amountColor} font-semibold">£${entry.amount}</div>
+        </div>
+        <button class="btn-red" data-remove="${id}">Delete</button>
+      `;
+
+      list.appendChild(row);
+    }
+
+    document.getElementById("total").textContent = "£" + total.toLocaleString();
+
+    // Delete handlers (ADMIN ONLY)
+    document.querySelectorAll("[data-remove]").forEach(btn => {
+      btn.onclick = async () => {
+        if (!confirm("Delete this transaction?")) return;
+
+        await updateDoc(finRef, {
+          [btn.dataset.remove]: deleteField()
+        });
+
+        loadFinances();
+      };
+    });
+  }
+
+  loadFinances();
+
+  // ---------- Add Entry (Admin Only) ----------
+  document.getElementById("add-btn").onclick = async () => {
+    const desc = document.getElementById("fin-desc").value.trim();
+    const amount = Number(document.getElementById("fin-amount").value);
+
+    if (!desc || isNaN(amount)) return alert("Enter a valid description and amount.");
+
+    const id = "entry-" + Date.now();
+
+    await setDoc(finRef, {
+      [id]: {
+        desc,
+        amount
+      }
+    }, { merge: true });
+
+    document.getElementById("fin-desc").value = "";
+    document.getElementById("fin-amount").value = "";
+
+    loadFinances();
+  };
+</script>
+
+</body>
+</html>
