@@ -1,225 +1,535 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>The Saints – Inventory Management</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-  body {
-    background: linear-gradient(to bottom right, #0f172a, #1e293b);
-    color: #e2e8f0;
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-  }
-
-  #top-watermark {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 120px;
-    opacity: 0.45;
-    pointer-events: none;
-  }
-
-  .card {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-    padding: 20px;
-    border-radius: 12px;
-    backdrop-filter: blur(6px);
-  }
-
-  .input-box {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: #e2e8f0;
-    width: 100%;
-  }
-
-  .btn-blue {
-    background: #3b82f6;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-  }
-
-  .btn-red {
-    background: #dc2626;
-    padding: 6px 10px;
-    border-radius: 6px;
-    color: white;
-  }
-
-  .btn-edit {
-    background: #f59e0b;
-    padding: 6px 10px;
-    border-radius: 6px;
-    color: white;
-  }
-
-  .inv-row {
-    background: rgba(15,23,42,0.5);
-    border: 1px solid rgba(59,130,246,0.3);
-    border-radius: 8px;
-    padding: 10px;
-  }
-</style>
-</head>
-
-<body>
-
-<img id="top-watermark" src="watermark.png" />
-
-<div class="p-6 max-w-3xl mx-auto">
-
-  <a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
-
-  <h1 class="text-3xl font-bold text-blue-400 mb-6">📦 Inventory Management</h1>
-
-  <!-- Add Item Card -->
-  <div class="card mb-8">
-    <h2 class="text-xl font-semibold mb-3">Add New Item</h2>
-
-    <input id="item-name" class="input-box mb-3" placeholder="Item name (e.g. Lockpick, Ammo Box)">
-    <input id="item-amount" type="number" class="input-box mb-3" placeholder="Amount">
-
-    <button id="add-btn" class="btn-blue w-full">Add Item</button>
-  </div>
-
-  <!-- Item List -->
-  <h2 class="text-xl font-semibold mb-3">Current Inventory</h2>
-
-  <div id="inventory-list" class="space-y-3"></div>
-
-</div>
-
-
-<!-- FIREBASE -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    deleteField
-  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-    authDomain: "the-saints-2f622.firebaseapp.com",
-    projectId: "the-saints-2f622",
-    storageBucket: "the-saints-2f622.firebasestorage.app",
-    messagingSenderId: "131705359242",
-    appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-    measurementId: "G-36PY404Q8N"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // -------- Role check ----------
-  async function ensureAccess() {
-    const raw = localStorage.getItem("saintsUser");
-    if (!raw) return window.location.href = "login.html";
-
-    let user;
-    try { user = JSON.parse(raw); }
-    catch { return window.location.href = "login.html"; }
-
-    const userRef = doc(db, "users", user.username);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return window.location.href = "login.html";
-
-    const data = snap.data();
-    if (!data.approved) return window.location.href = "awaiting-approval.html";
-
-    if (data.role === "untrusted")
-      return window.location.href = "index.html";
-  }
-
-  await ensureAccess();
-
-  // -------- Inventory Data --------
-  const invRef = doc(db, "inventory", "shared");
-
-  async function loadInventory() {
-    const snap = await getDoc(invRef);
-    const list = document.getElementById("inventory-list");
-
-    list.innerHTML = "";
-
-    if (!snap.exists()) return;
-
-    const items = snap.data();
-
-    for (const [item, amount] of Object.entries(items)) {
-      const row = document.createElement("div");
-      row.className = "inv-row flex justify-between items-center";
-
-      row.innerHTML = `
-        <div>
-          <div class="font-bold">${item}</div>
-          <div class="text-gray-400 text-sm">Amount: ${amount}</div>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn-edit" data-item="${item}">Edit</button>
-          <button class="btn-red" data-remove="${item}">Delete</button>
-        </div>
-      `;
-
-      list.appendChild(row);
+  <meta charset="UTF-8" />
+  <title>SAINTS_NET://INVENTORY</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    // Delete handler
-    document.querySelectorAll("[data-remove]").forEach(btn => {
-      btn.onclick = async () => {
-        await updateDoc(invRef, {
-          [btn.dataset.remove]: deleteField()
-        });
-        loadInventory();
-      };
-    });
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
 
-    // Edit handler
-    document.querySelectorAll("[data-item]").forEach(btn => {
-      btn.onclick = async () => {
-        const newAmount = prompt("New amount:");
-        if (!newAmount) return;
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridScroll 20s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-        await updateDoc(invRef, {
-          [btn.dataset.item]: Number(newAmount)
-        });
-        loadInventory();
-      };
-    });
-  }
+    @keyframes gridScroll {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
 
-  loadInventory();
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        transparent 50%,
+        rgba(0, 255, 0, 0.02) 50%
+      );
+      background-size: 100% 4px;
+      animation: scanline 8s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
 
-  // Add Item
-  document.getElementById("add-btn").onclick = async () => {
-    const name = document.getElementById("item-name").value.trim();
-    const amount = Number(document.getElementById("item-amount").value);
+    @keyframes scanline {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100vh); }
+    }
 
-    if (!name || isNaN(amount)) return alert("Enter valid item + amount.");
+    .container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-    await updateDoc(invRef, {
-      [name]: amount
-    }).catch(async () => {
-      await setDoc(invRef, { [name]: amount }, { merge: true });
-    });
+    .glitch {
+      text-shadow: 
+        0.05em 0 0 rgba(255, 0, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+        0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      animation: glitch 500ms infinite;
+    }
 
-    document.getElementById("item-name").value = "";
-    document.getElementById("item-amount").value = "";
+    @keyframes glitch {
+      0% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      14% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      15% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      49% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      50% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      99% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      100% {
+        text-shadow: 
+          -0.025em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 30px;
+      border-bottom: 2px solid #0f0;
+      position: relative;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #0f0, transparent);
+      box-shadow: 0 0 10px #0f0;
+    }
+
+    .blink {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      padding: 8px 15px;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      z-index: 10;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .back-btn:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    }
+
+    #top-watermark {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 100px;
+      opacity: 0.3;
+      pointer-events: none;
+      filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+      z-index: 10;
+    }
+
+    .panel {
+      background: rgba(0, 20, 0, 0.8);
+      border: 2px solid #0f0;
+      padding: 25px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 20px;
+      background: #000;
+      padding: 0 10px;
+      font-size: 11px;
+      color: #0f0;
+      letter-spacing: 2px;
+    }
+
+    .panel.add-panel::before {
+      content: '[ ADD NEW ASSET ]';
+    }
+
+    .panel.list-panel::before {
+      content: '[ INVENTORY DATABASE ]';
+    }
+
+    .input-field {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #0f0;
+      color: #0f0;
+      padding: 12px;
+      width: 100%;
+      font-family: 'Courier Prime', monospace;
+      font-size: 14px;
+      margin-bottom: 15px;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .input-field:focus {
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      border-color: #0ff;
+    }
+
+    .input-field::placeholder {
+      color: rgba(0, 255, 0, 0.4);
+    }
+
+    .btn {
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      padding: 12px 20px;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 10px;
+      width: auto;
+      margin-left: 5px;
+    }
+
+    .btn-edit {
+      border-color: #ff0;
+      color: #ff0;
+    }
+
+    .btn-edit:hover {
+      background: #ff0;
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+    }
+
+    .btn-delete {
+      border-color: #f00;
+      color: #f00;
+    }
+
+    .btn-delete:hover {
+      background: #f00;
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+    }
+
+    .inventory-item {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 255, 0, 0.3);
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+
+    .inventory-item:hover {
+      border-color: #0f0;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+      background: rgba(0, 20, 0, 0.6);
+    }
+
+    .item-name {
+      font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .item-amount {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .item-amount::before {
+      content: '> QTY: ';
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.5;
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.9);
+      border-top: 1px solid #0f0;
+      padding: 10px 20px;
+      font-size: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      z-index: 10;
+    }
+
+    .terminal-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #0f0;
+      box-shadow: 0 0 5px #0f0;
+      display: inline-block;
+      margin-right: 8px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <img id="top-watermark" src="watermark.png" alt="Saints Logo" />
+  
+  <a href="index.html" class="back-btn">⬅ Return</a>
+
+  <div class="container">
+    <div class="header">
+      <h1 class="glitch" style="font-size: 36px; margin-bottom: 10px;">📦 INVENTORY SYSTEM</h1>
+      <div style="font-size: 12px; opacity: 0.7; letter-spacing: 3px;">ASSET MANAGEMENT DATABASE</div>
+      <div style="font-size: 10px; opacity: 0.5; margin-top: 10px;">
+        <span class="blink">█</span> TRACKING MODULE ACTIVE
+      </div>
+    </div>
+
+    <!-- Add Item Panel -->
+    <div class="panel add-panel">
+      <input id="item-name" class="input-field" placeholder="> ENTER ASSET NAME..." />
+      <input id="item-amount" type="number" class="input-field" placeholder="> ENTER QUANTITY..." />
+      <button id="add-btn" class="btn">[ REGISTER ASSET ]</button>
+    </div>
+
+    <!-- Inventory List Panel -->
+    <div class="panel list-panel">
+      <div id="inventory-list"></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div><span class="terminal-dot"></span>SYSTEM: OPERATIONAL</div>
+    <div>ITEMS TRACKED: <span id="item-count">0</span></div>
+    <div>SYNC: REAL-TIME</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      deleteField
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+      authDomain: "the-saints-2f622.firebaseapp.com",
+      projectId: "the-saints-2f622",
+      storageBucket: "the-saints-2f622.firebasestorage.app",
+      messagingSenderId: "131705359242",
+      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+      measurementId: "G-36PY404Q8N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Role check
+    async function ensureAccess() {
+      const raw = localStorage.getItem("saintsUser");
+      if (!raw) return window.location.href = "login.html";
+
+      let user;
+      try { user = JSON.parse(raw); }
+      catch { return window.location.href = "login.html"; }
+
+      const userRef = doc(db, "users", user.username);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) return window.location.href = "login.html";
+
+      const data = snap.data();
+      if (!data.approved) return window.location.href = "awaiting-approval.html";
+
+      if (data.role === "untrusted")
+        return window.location.href = "index.html";
+    }
+
+    await ensureAccess();
+
+    const invRef = doc(db, "inventory", "shared");
+
+    async function loadInventory() {
+      const snap = await getDoc(invRef);
+      const list = document.getElementById("inventory-list");
+
+      list.innerHTML = "";
+
+      if (!snap.exists() || Object.keys(snap.data()).length === 0) {
+        list.innerHTML = '<div class="empty-state">[ NO ASSETS REGISTERED ]<br/>BEGIN BY ADDING ITEMS ABOVE</div>';
+        document.getElementById("item-count").textContent = "0";
+        return;
+      }
+
+      const items = snap.data();
+      const itemCount = Object.keys(items).length;
+      document.getElementById("item-count").textContent = itemCount;
+
+      for (const [item, amount] of Object.entries(items)) {
+        const row = document.createElement("div");
+        row.className = "inventory-item";
+
+        row.innerHTML = `
+          <div>
+            <div class="item-name">${item}</div>
+            <div class="item-amount">${amount}</div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <button class="btn btn-small btn-edit" data-item="${item}">[ MODIFY ]</button>
+            <button class="btn btn-small btn-delete" data-remove="${item}">[ DELETE ]</button>
+          </div>
+        `;
+
+        list.appendChild(row);
+      }
+
+      // Delete handler
+      document.querySelectorAll("[data-remove]").forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm(`DELETE ASSET: ${btn.dataset.remove}?`)) return;
+          
+          await updateDoc(invRef, {
+            [btn.dataset.remove]: deleteField()
+          });
+          loadInventory();
+        };
+      });
+
+      // Edit handler
+      document.querySelectorAll("[data-item]").forEach(btn => {
+        btn.onclick = async () => {
+          const newAmount = prompt(`MODIFY QUANTITY FOR: ${btn.dataset.item}`);
+          if (!newAmount || isNaN(Number(newAmount))) return;
+
+          await updateDoc(invRef, {
+            [btn.dataset.item]: Number(newAmount)
+          });
+          loadInventory();
+        };
+      });
+    }
+
     loadInventory();
-  };
-</script>
 
+    // Add Item
+    document.getElementById("add-btn").onclick = async () => {
+      const name = document.getElementById("item-name").value.trim();
+      const amount = Number(document.getElementById("item-amount").value);
+
+      if (!name || isNaN(amount)) {
+        alert("ERROR: INVALID INPUT DATA");
+        return;
+      }
+
+      await updateDoc(invRef, {
+        [name]: amount
+      }).catch(async () => {
+        await setDoc(invRef, { [name]: amount }, { merge: true });
+      });
+
+      document.getElementById("item-name").value = "";
+      document.getElementById("item-amount").value = "";
+      loadInventory();
+    };
+  </script>
 </body>
 </html>
