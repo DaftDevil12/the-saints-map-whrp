@@ -2,195 +2,412 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>The Saints - Personal Map</title>
+  <title>SAINTS_NET://MAP</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; }
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+    
+    html, body { 
+      margin: 0; 
+      padding: 0; 
+      height: 100%; 
+      overflow: hidden; 
+      background: #000;
+      font-family: 'Courier Prime', monospace;
+    }
+    
+    #map { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      bottom: 0; 
+      z-index: 0;
+    }
     
     .sidebar {
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 300px;
-      background: #1f2937;
-      color: #fff;
+      width: 320px;
+      background: rgba(0, 20, 0, 0.95);
+      color: #0f0;
       overflow-y: auto;
       z-index: 1000;
       transition: transform 0.3s;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+      border-right: 2px solid #0f0;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
     }
-    .sidebar.collapsed { transform: translateX(-300px); }
+    .sidebar.collapsed { transform: translateX(-320px); }
     
     .sidebar-toggle {
       position: absolute;
-      left: 310px;
+      left: 330px;
       top: 20px;
-      background: #1f2937;
-      color: white;
+      background: rgba(0, 20, 0, 0.95);
+      color: #0f0;
       padding: 10px 15px;
-      border-radius: 0 5px 5px 0;
+      border: 2px solid #0f0;
+      border-radius: 0 4px 4px 0;
       cursor: pointer;
       z-index: 1001;
-      transition: left 0.3s;
+      transition: all 0.3s;
+      font-family: 'Courier Prime', monospace;
     }
-    .sidebar.collapsed + .sidebar-toggle { left: 10px; }
+    .sidebar-toggle:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    }
+    .sidebar.collapsed + .sidebar-toggle { 
+      left: 10px;
+      border-radius: 4px;
+    }
     
     .toolbar {
       position: absolute;
       top: 20px;
       right: 20px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      background: rgba(0, 20, 0, 0.95);
+      padding: 20px;
+      border: 2px solid #0f0;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
       z-index: 1000;
-      max-width: 350px;
+      max-width: 380px;
+      color: #0f0;
     }
     
     .tool-btn {
-      @apply px-3 py-2 rounded-md text-sm font-medium bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all;
+      padding: 8px 12px;
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .tool-btn:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
     }
     .tool-btn.active {
-      @apply bg-blue-600 text-white ring-2 ring-blue-400;
+      background: #0f0;
+      color: #000;
     }
     
     .category-item {
       padding: 12px 16px;
       cursor: pointer;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid rgba(0, 255, 0, 0.2);
       display: flex;
       align-items: center;
       gap: 10px;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
-    .category-item:hover { background: #374151; }
-    .category-item.active { background: #3b82f6; }
+    .category-item:hover { 
+      background: rgba(0, 255, 0, 0.1);
+      border-left: 3px solid #0f0;
+      padding-left: 13px;
+    }
+    .category-item.active { 
+      background: rgba(0, 255, 0, 0.2);
+      border-left: 3px solid #0f0;
+      padding-left: 13px;
+    }
     
     .shape-btn {
-      @apply w-10 h-10 flex items-center justify-center rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all cursor-pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-right: 8px;
+    }
+    .shape-btn:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
     }
     .shape-btn.active {
-      @apply bg-purple-600 text-white ring-2 ring-purple-400;
+      background: #0f0;
+      color: #000;
     }
     
     .color-swatch {
-      @apply w-8 h-8 rounded-md cursor-pointer border-2 border-transparent hover:scale-110 transition-transform;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .color-swatch:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
     }
     .color-swatch.active {
-      @apply border-white ring-2 ring-white;
+      border-color: #0f0;
+      box-shadow: 0 0 10px #0f0;
     }
     
-    .leaflet-container { background: #1a1a1a; }
+    .leaflet-container { background: #0a0a0a; }
 
     #watermark {
       position: fixed;
       bottom: 15px;
       right: 15px;
-      width: 140px;
-      opacity: 0.55;
+      width: 100px;
+      opacity: 0.3;
       pointer-events: none;
       z-index: 9999;
+      filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
     }
 
     .top-banner {
       position: absolute;
-      top: 15px;
+      top: 20px;
       left: 20px;
       z-index: 1002;
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      border: 1px solid rgba(59,130,246,0.5);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      background: rgba(0, 20, 0, 0.95);
+      color: #0f0;
+      padding: 10px 16px;
+      border: 2px solid #0f0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-family: 'Courier Prime', monospace;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
     }
 
     #save-indicator {
       position: absolute;
-      top: 15px;
-      right: 380px;
+      top: 20px;
+      right: 420px;
       z-index: 1002;
-      background: rgba(16,185,129,0.9);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
+      background: rgba(0, 255, 0, 0.9);
+      color: #000;
+      padding: 8px 14px;
+      border: 2px solid #0f0;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Courier Prime', monospace;
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
     }
 
     #save-indicator.saving {
-      background: rgba(59,130,246,0.9);
+      background: rgba(0, 255, 255, 0.9);
+      border-color: #0ff;
+      color: #000;
       opacity: 1;
     }
 
     #save-indicator.saved {
-      background: rgba(16,185,129,0.9);
+      background: rgba(0, 255, 0, 0.9);
+      border-color: #0f0;
+      color: #000;
       opacity: 1;
+    }
+
+    #dashboard-btn {
+      position: absolute;
+      top: 70px;
+      left: 20px;
+      z-index: 1003;
+      background: rgba(0, 20, 0, 0.95);
+      color: #0f0;
+      padding: 10px 16px;
+      border: 2px solid #0f0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+    }
+
+    #dashboard-btn:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 2px solid #0f0;
+      text-align: center;
+    }
+
+    .sidebar-title {
+      font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 10px #0f0;
+    }
+
+    .sidebar-subtitle {
+      font-size: 10px;
+      opacity: 0.7;
+      letter-spacing: 1px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .section-label::before {
+      content: '> ';
+    }
+
+    .input-field {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #0f0;
+      color: #0f0;
+      padding: 10px;
+      width: 100%;
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .input-field:focus {
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      border-color: #0ff;
+    }
+
+    .input-field::placeholder {
+      color: rgba(0, 255, 0, 0.4);
+    }
+
+    .btn-action {
+      padding: 10px 16px;
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .btn-action:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    }
+
+    .btn-action.btn-red {
+      border-color: #f00;
+      color: #f00;
+    }
+
+    .btn-action.btn-red:hover {
+      background: #f00;
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+    }
+
+    .toolbar-section {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+    }
+
+    .toolbar-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .blink {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
   </style>
 </head>
 <body>
-  <!-- Shared map watermark -->
+  <!-- Watermark -->
   <img id="watermark" src="watermark.png" alt="Watermark">
 
-  <!-- Top banner (role label) -->
+  <!-- Top banner -->
   <div id="top-banner" class="top-banner">
-    Shared Map (Trusted+)
+    <span class="blink">█</span> PERSONAL MAP
   </div>
 
   <!-- Save indicator -->
   <div id="save-indicator">
-    💾 Saving...
+    💾 SAVING...
   </div>
-  <a href="index.html"
-     id="dashboard-btn"
-     style="
-        position: absolute;
-        top: 15px;
-        left: 160px;
-        z-index: 1003;
-        background: rgba(15,23,42,0.9);
-        color: #e5e7eb;
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        border: 1px solid rgba(59,130,246,0.5);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        cursor: pointer;
-        text-decoration: none;
-     ">
-     ⬅ Dashboard
+
+  <!-- Dashboard button -->
+  <a href="index.html" id="dashboard-btn">
+    ⬅ RETURN TO MAINFRAME
   </a>
   
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
-    <div class="p-4 border-b border-gray-700">
-      <h1 class="text-xl font-bold">The Saints - Shared Map</h1>
-      <p class="text-sm text-gray-400 mt-1">Information shared by trusted members.</p>
+    <div class="sidebar-header">
+      <div class="sidebar-title">🗺️ TACTICAL MAP</div>
+      <div class="sidebar-subtitle">PERSONAL INTELLIGENCE DATABASE</div>
     </div>
     
-    <div id="categories">
-      <div class="category-item" data-category="Crafting Locations">
-        <i class="fas fa-gem"></i>
-        <span>Collectibles</span>
-      </div>
-      <div class="category-item" data-category="Drug Processing">
-        <i class="fas fa-gun"></i>
-        <span>Ammu-Nation</span>
-      </div>
-      <div class="category-item" data-category="Other">
-        <i class="fas fa-utensils"></i>
-        <span>Food & Drink</span>
+    <div style="padding: 20px;">
+      <label class="section-label">CATEGORIES</label>
+      <div id="categories">
+        <div class="category-item" data-category="Crafting Locations">
+          <i class="fas fa-gem"></i>
+          <span>Collectibles</span>
+        </div>
+        <div class="category-item" data-category="Drug Processing">
+          <i class="fas fa-gun"></i>
+          <span>Ammu-Nation</span>
+        </div>
+        <div class="category-item" data-category="Other">
+          <i class="fas fa-utensils"></i>
+          <span>Food & Drink</span>
+        </div>
       </div>
     </div>
   </div>
@@ -201,23 +418,27 @@
 
   <!-- Drawing Toolbar -->
   <div class="toolbar">
-    <h3 class="text-lg font-bold mb-3">Shared Drawing Tools</h3>
+    <div style="text-align: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #0f0;">
+      <div style="font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">
+        DRAWING TOOLS
+      </div>
+    </div>
     
-    <div class="flex flex-col gap-3">
+    <div style="display: flex; flex-direction: column; gap: 20px;">
       <!-- Tool Selection -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Tool:</label>
-        <div class="flex gap-2">
-          <button id="tool-pan" class="tool-btn active">🖐️ Pan</button>
-          <button id="tool-text" class="tool-btn">📝 Text</button>
-          <button id="tool-draw" class="tool-btn">✏️ Draw</button>
+      <div class="toolbar-section">
+        <label class="section-label">TOOL MODE</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button id="tool-pan" class="tool-btn active">🖐️ PAN</button>
+          <button id="tool-text" class="tool-btn">📝 TEXT</button>
+          <button id="tool-draw" class="tool-btn">✏️ DRAW</button>
         </div>
       </div>
       
       <!-- Shape Tools -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Shapes:</label>
-        <div class="flex gap-2">
+      <div class="toolbar-section">
+        <label class="section-label">SHAPE MODE</label>
+        <div style="display: flex; gap: 8px;">
           <div id="shape-rectangle" class="shape-btn" title="Rectangle">
             <i class="fas fa-square"></i>
           </div>
@@ -231,31 +452,31 @@
       </div>
       
       <!-- Color Picker -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Color:</label>
-        <div class="flex gap-2 flex-wrap">
+      <div class="toolbar-section">
+        <label class="section-label">COLOR SELECT</label>
+        <div style="display: flex; flex-wrap: wrap;">
           <div class="color-swatch active" data-color="#ef4444" style="background: #ef4444;"></div>
           <div class="color-swatch" data-color="#3b82f6" style="background: #3b82f6;"></div>
           <div class="color-swatch" data-color="#10b981" style="background: #10b981;"></div>
           <div class="color-swatch" data-color="#f59e0b" style="background: #f59e0b;"></div>
           <div class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
-          <input type="color" id="custom-color" value="#ef4444" class="w-8 h-8 rounded-md cursor-pointer" />
+          <input type="color" id="custom-color" value="#ef4444" class="color-swatch" style="padding: 0;" />
         </div>
       </div>
       
       <!-- Text Input -->
-      <div>
-        <label class="text-xs font-medium text-gray-700 mb-1 block">Text Label:</label>
-        <input type="text" id="text-input" placeholder="Enter text..." value="Location" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+      <div class="toolbar-section">
+        <label class="section-label">TEXT LABEL</label>
+        <input type="text" id="text-input" placeholder="> ENTER TEXT..." value="Location" class="input-field" />
       </div>
       
       <!-- Actions -->
-      <div class="flex gap-2 pt-2 border-t border-gray-300">
-        <button id="share-btn" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium">
-          🔗 Share
+      <div>
+        <button id="share-btn" class="btn-action">
+          🔗 SHARE MAP
         </button>
-        <button id="clear-all" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium">
-          🗑️ Clear
+        <button id="clear-all" class="btn-action btn-red">
+          🗑️ CLEAR ALL
         </button>
       </div>
     </div>
@@ -316,19 +537,17 @@
 
     // Check if viewing someone else's map (for admins)
     const urlParams = new URLSearchParams(window.location.search);
-    const viewingUsername = urlParams.get('user'); // e.g., ?user=john123
+    const viewingUsername = urlParams.get('user');
     
     // Determine which map to load
-    let targetUsername = user.username; // Default to own map
+    let targetUsername = user.username;
     let isViewingOthersMap = false;
     
     if (viewingUsername && user.username === "Dante-Alberts") {
-      // Admin viewing another user's map
       targetUsername = viewingUsername;
       isViewingOthersMap = true;
     }
 
-    // IMPORTANT: Each user has their OWN personal map document
     const mapId = "personal-" + targetUsername;
     const mapDocRef = doc(db, "personalMaps", mapId);
     
@@ -371,10 +590,12 @@
 
       const banner = document.getElementById("top-banner");
       if (isViewingOthersMap) {
-        banner.textContent = `👁️ Viewing: ${targetUsername}'s Map (Admin Mode)`;
-        banner.style.background = 'rgba(239,68,68,0.9)'; // Red for admin viewing
+        banner.innerHTML = `<span class="blink">█</span> ADMIN VIEW: ${targetUsername.toUpperCase()}'S MAP`;
+        banner.style.borderColor = '#f00';
+        banner.style.color = '#f00';
+        banner.style.boxShadow = '0 0 15px rgba(255, 0, 0, 0.6)';
       } else {
-        banner.textContent = `Personal Map - ${sessionUser.username}`;
+        banner.innerHTML = `<span class="blink">█</span> PERSONAL MAP: ${sessionUser.username.toUpperCase()}`;
       }
 
       initMap();
@@ -464,22 +685,18 @@
     }
 
     async function initializeStorage() {
-      // Load initial data for the TARGET user's map
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
         const data = existing.data();
-        // Apply data for the map we're viewing (target user's map)
         if (data.username === targetUsername || !data.username) {
           applyRemoteData(data);
         }
       }
 
-      // Live updates - ONLY for the TARGET user's personal map document
       onSnapshot(mapDocRef, (snapshot) => {
         if (!snapshot.exists()) return;
         const data = snapshot.data();
         
-        // Apply changes only if they belong to the TARGET user
         if (data.username === targetUsername || !data.username) {
           applyRemoteData(data);
         }
@@ -489,9 +706,8 @@
     async function saveState() {
       if (!mapDocRef || isApplyingRemote) return;
 
-      // Show saving indicator
       const indicator = document.getElementById('save-indicator');
-      indicator.textContent = '💾 Saving...';
+      indicator.textContent = '💾 SAVING...';
       indicator.className = 'saving';
 
       const safeLines = lineFeatures.map(line => ({
@@ -516,29 +732,26 @@
           text: t.text,
           color: t.color
         })),
-        username: targetUsername, // Save to the TARGET user's map
+        username: targetUsername,
         lastUpdated: new Date().toISOString(),
-        lastEditedBy: user.username // Track who made the edit
+        lastEditedBy: user.username
       };
 
       try {
         await setDoc(mapDocRef, data);
         console.log('✅ Saved to Firebase:', data);
-        console.log('📍 Document path:', `personalMaps/${mapId}`);
-        console.log('👤 Username in data:', data.username);
         
-        // Show saved indicator
-        indicator.textContent = '✅ Saved';
+        indicator.textContent = '✅ SAVED';
         indicator.className = 'saved';
         
-        // Hide after 2 seconds
         setTimeout(() => {
           indicator.style.opacity = '0';
         }, 2000);
       } catch (e) {
         console.error('❌ Save failed:', e);
-        indicator.textContent = '❌ Save failed';
-        indicator.style.background = 'rgba(239,68,68,0.9)';
+        indicator.textContent = '❌ SAVE FAILED';
+        indicator.style.background = 'rgba(255,0,0,0.9)';
+        indicator.style.borderColor = '#f00';
         setTimeout(() => {
           indicator.style.opacity = '0';
         }, 3000);
@@ -589,18 +802,21 @@
       swatch.addEventListener('click', () => {
         document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
         swatch.classList.add('active');
-        currentColor = swatch.dataset.color;
-        document.getElementById('custom-color').value = currentColor;
+        if (swatch.dataset.color) {
+          currentColor = swatch.dataset.color;
+          document.getElementById('custom-color').value = currentColor;
+        }
       });
     });
 
     document.getElementById('custom-color').addEventListener('input', (e) => {
       currentColor = e.target.value;
       document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      e.target.classList.add('active');
     });
 
     document.getElementById('clear-all').addEventListener('click', async () => {
-      if (!confirm('Clear all drawings on the shared map for everyone?')) return;
+      if (!confirm('CLEAR ALL DRAWINGS?\n\nTHIS ACTION CANNOT BE UNDONE.')) return;
       lineFeatures = [];
       shapeFeatures = [];
       redrawLines();
@@ -611,264 +827,4 @@
     });
 
     document.getElementById('share-btn').addEventListener('click', () => {
-      const url = window.location.origin + window.location.pathname;
-      navigator.clipboard.writeText(url);
-      alert('Shared map link copied to clipboard!');
-    });
-
-    function setupMapInteractions() {
-      let tempShapeStart = null;
-
-      map.on('mousedown', (e) => {
-        if (currentTool === 'draw') {
-          isDrawing = true;
-          currentLineCoords = [{ lat: e.latlng.lat, lng: e.latlng.lng }];
-        } else if (currentTool === 'shape' && (currentShape === 'rectangle' || currentShape === 'circle')) {
-          tempShapeStart = e.latlng;
-        }
-      });
-
-      map.on('mousemove', (e) => {
-        if (isDrawing && currentTool === 'draw') {
-          currentLineCoords.push({ lat: e.latlng.lat, lng: e.latlng.lng });
-          redrawLines(true);
-        }
-      });
-
-      map.on('mouseup', async (e) => {
-        if (isDrawing && currentTool === 'draw') {
-          isDrawing = false;
-          if (currentLineCoords.length > 1) {
-            lineFeatures.push({
-              id: 'line-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-              coordinates: currentLineCoords,
-              color: currentColor
-            });
-            redrawLines();
-            await saveState();
-          }
-          currentLineCoords = [];
-        } else if (tempShapeStart && currentTool === 'shape') {
-          if (currentShape === 'rectangle') {
-            shapeFeatures.push({
-              id: 'rect-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-              type: 'rectangle',
-              bounds: [
-                { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
-                { lat: e.latlng.lat, lng: e.latlng.lng }
-              ],
-              color: currentColor
-            });
-          } else if (currentShape === 'circle') {
-            const radius = map.distance(tempShapeStart, e.latlng);
-            shapeFeatures.push({
-              id: 'circle-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-              type: 'circle',
-              center: { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
-              radius: radius,
-              color: currentColor
-            });
-          }
-          redrawShapes();
-          await saveState();
-          tempShapeStart = null;
-        }
-      });
-
-      map.on('click', async (e) => {
-        if (currentTool === 'text') {
-          const text = document.getElementById('text-input').value || 'Location';
-          createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
-          await saveState();
-        } else if (currentTool === 'shape' && currentShape === 'polygon') {
-          polygonPoints.push({ lat: e.latlng.lat, lng: e.latlng.lng });
-          if (polygonPoints.length >= 3) {
-            setTimeout(async () => {
-              if (confirm('Complete polygon?')) {
-                shapeFeatures.push({
-                  id: 'poly-' + Date.now() + '-' + Math.random().toString(36).slice(2),
-                  type: 'polygon',
-                  coordinates: polygonPoints,
-                  color: currentColor
-                });
-                redrawShapes();
-                await saveState();
-                polygonPoints = [];
-              }
-            }, 100);
-          }
-        }
-      });
-    }
-
-    function redrawLines(includeTemp = false) {
-      if (!map) return;
-
-      map.eachLayer(layer => {
-        if (layer.options && layer.options.isDrawnLine) {
-          map.removeLayer(layer);
-        }
-      });
-
-      lineFeatures.forEach(feature => {
-        if (!Array.isArray(feature.coordinates)) return;
-        const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
-        const layer = L.polyline(latlngs, {
-          color: feature.color,
-          weight: 3,
-          opacity: 0.9,
-          isDrawnLine: true
-        }).addTo(map);
-
-        layer.on('click', async () => {
-          if (confirm('Delete this line from the shared map for everyone?')) {
-            lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
-            redrawLines();
-            await saveState();
-          }
-        });
-      });
-
-      if (includeTemp && currentLineCoords.length > 0) {
-        const tempLatLngs = currentLineCoords.map(p => [p.lat, p.lng]);
-        L.polyline(tempLatLngs, {
-          color: currentColor,
-          weight: 3,
-          opacity: 0.6,
-          isDrawnLine: true
-        }).addTo(map);
-      }
-    }
-
-    function redrawShapes() {
-      if (!map) return;
-
-      map.eachLayer(layer => {
-        if (layer.options && layer.options.isDrawnShape) {
-          map.removeLayer(layer);
-        }
-      });
-
-      shapeFeatures.forEach(feature => {
-        let layer;
-        if (feature.type === 'rectangle' && Array.isArray(feature.bounds) && feature.bounds.length === 2) {
-          const b = feature.bounds;
-          const bounds = [
-            [b[0].lat, b[0].lng],
-            [b[1].lat, b[1].lng]
-          ];
-          layer = L.rectangle(bounds, {
-            color: feature.color,
-            fillColor: feature.color,
-            fillOpacity: 0.3,
-            weight: 2,
-            isDrawnShape: true
-          });
-        } else if (feature.type === 'circle' && feature.center) {
-          const center = [feature.center.lat, feature.center.lng];
-          layer = L.circle(center, {
-            radius: feature.radius,
-            color: feature.color,
-            fillColor: feature.color,
-            fillOpacity: 0.3,
-            weight: 2,
-            isDrawnShape: true
-          });
-        } else if (feature.type === 'polygon' && Array.isArray(feature.coordinates)) {
-          const coords = feature.coordinates.map(p => [p.lat, p.lng]);
-          layer = L.polygon(coords, {
-            color: feature.color,
-            fillColor: feature.color,
-            fillOpacity: 0.3,
-            weight: 2,
-            isDrawnShape: true
-          });
-        }
-        
-        if (layer) {
-          layer.addTo(map);
-          layer.on('click', async () => {
-            if (confirm('Delete this shape from the shared map for everyone?')) {
-              shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
-              redrawShapes();
-              await saveState();
-            }
-          });
-        }
-      });
-    }
-
-    function createTextMarker(lat, lng, text, color, idOptional) {
-      const id = idOptional || 'label-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-
-      const el = document.createElement('div');
-      el.style.cssText = `
-        padding: 6px 12px;
-        background: ${color};
-        color: white;
-        border: 2px solid ${color};
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        cursor: pointer;
-        white-space: nowrap;
-      `;
-      el.textContent = text;
-
-      const marker = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: '',
-          html: el.outerHTML,
-          iconSize: null,
-          iconAnchor: [0, 0]
-        }),
-        draggable: true
-      }).addTo(map);
-
-      const markerObj = { id, lat, lng, text, color, markerInstance: marker };
-
-      marker.on('dragend', async () => {
-        const pos = marker.getLatLng();
-        markerObj.lat = pos.lat;
-        markerObj.lng = pos.lng;
-        await saveState();
-      });
-
-      marker.on('click', async () => {
-        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
-        if (action === null) return;
-        if (action.toUpperCase() === 'DELETE') {
-          marker.remove();
-          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          await saveState();
-        } else if (action.trim()) {
-          markerObj.text = action.trim();
-          marker.remove();
-          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
-          await saveState();
-        }
-      });
-
-      textMarkers.push(markerObj);
-      return markerObj;
-    }
-
-    window.toggleSidebar = function () {
-      document.getElementById('sidebar').classList.toggle('collapsed');
-    };
-
-    document.querySelectorAll('.category-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        alert('Category markers would be shown here: ' + item.dataset.category);
-      });
-    });
-
-    // Initialize everything
-    ensureAccess();
-  </script>
-</body>
-</html>
+      const url = window.location.origin + window.location.
