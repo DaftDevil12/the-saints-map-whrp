@@ -1,84 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>The Saints - Admin Console</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background: #020617;
-      color: white;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>The Saints – Admin Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: linear-gradient(to bottom right, #020617, #0f172a);
+    color: #e5e7eb;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  .card {
+    background: rgba(15,23,42,0.9);
+    border-radius: 16px;
+    border: 1px solid rgba(59,130,246,0.5);
+    padding: 20px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  }
+</style>
 </head>
-<body class="min-h-screen">
-  <div class="max-w-5xl mx-auto py-6 px-4">
-    <header class="flex items-center justify-between mb-6">
+<body class="p-6">
+  <img src="watermark.png" style="position:fixed;top:20px;right:20px;width:120px;opacity:.5;pointer-events:none;" />
+
+  <a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
+  <h1 class="text-3xl font-bold text-blue-400 mb-6">🛡 Admin Control Panel</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- User approval & roles -->
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-3 text-rose-300">User Approvals & Roles</h2>
+      <div id="pending-users" class="mb-5">
+        <h3 class="text-sm font-semibold text-gray-300 mb-2">Pending Approvals</h3>
+        <div id="pending-list" class="space-y-2 text-sm text-gray-200"></div>
+      </div>
+
       <div>
-        <h1 class="text-2xl font-bold text-cyan-300">The Saints Admin Console</h1>
-        <p class="text-sm text-slate-400">Manage user accounts, roles, and approvals.</p>
+        <h3 class="text-sm font-semibold text-gray-300 mb-2">Existing Users</h3>
+        <div id="user-list" class="space-y-2 text-sm text-gray-200"></div>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="btn-map-picker" class="px-3 py-1.5 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700">
-          Map Picker
-        </button>
-        <button id="btn-logout" class="px-3 py-1.5 text-xs rounded bg-red-600 hover:bg-red-500">
-          Log out
-        </button>
-      </div>
-    </header>
+    </div>
 
-    <div id="status" class="text-sm text-slate-300 mb-4"></div>
-
-    <!-- Create user form -->
-    <section class="mb-6 bg-slate-900/80 rounded-lg border border-slate-700 p-4">
-      <h2 class="text-lg font-semibold text-cyan-200 mb-3">Create User</h2>
-      <div class="grid md:grid-cols-4 gap-3 text-sm">
-        <div class="md:col-span-2">
-          <label class="block text-xs text-slate-300 mb-1">Username</label>
-          <input id="new-username" type="text"
-                 class="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-700 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs text-slate-300 mb-1">Password</label>
-          <input id="new-password" type="password"
-                 class="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-700 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs text-slate-300 mb-1">Role</label>
-          <select id="new-role"
-                  class="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-700 text-xs">
-            <option value="untrusted">Untrusted</option>
-            <option value="trusted">Trusted</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-      <button id="create-user"
-        class="mt-3 px-3 py-1.5 text-xs rounded bg-blue-600 hover:bg-blue-500">
-        Create User
-      </button>
-    </section>
-
-    <!-- Users list -->
-    <section class="bg-slate-900/80 rounded-lg border border-slate-700 p-4">
-      <h2 class="text-lg font-semibold text-cyan-200 mb-3">All Users</h2>
-      <div id="users-list" class="divide-y divide-slate-800 text-sm">
-        <div class="text-xs text-slate-500">Loading users...</div>
-      </div>
-    </section>
+    <!-- Password reset requests -->
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-3 text-blue-300">Password Reset Requests</h2>
+      <p class="text-xs text-gray-400 mb-3">
+        All new or reset passwords are <span class="font-semibold">one-time</span>. Users are forced to change them on next login.
+      </p>
+      <div id="reset-list" class="space-y-2 text-sm text-gray-200"></div>
+    </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { 
-      getFirestore, 
-      collection, 
-      getDocs, 
-      doc, 
-      setDoc, 
-      deleteDoc 
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc,
+      collection,
+      getDocs,
+      setDoc,
+      deleteDoc,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -94,172 +78,208 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const statusEl = document.getElementById("status");
-    const usersListEl = document.getElementById("users-list");
+    // ---- Admin gate ----
+    const raw = localStorage.getItem("saintsUser");
+    if (!raw) window.location.href = "login.html";
 
-    function setStatus(msg) {
-      statusEl.textContent = msg || "";
+    let sessionUser;
+    try { sessionUser = JSON.parse(raw); } catch {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
     }
 
-    function ensureAdmin() {
-      const s = localStorage.getItem("saintsUser");
-      if (!s) {
-        window.location.href = "login.html";
-        return null;
-      }
-      try {
-        const u = JSON.parse(s);
-        if (!u.username || u.role !== "admin") {
-          alert("Admins only.");
-          window.location.href = "login.html";
-          return null;
-        }
-        return u;
-      } catch {
-        window.location.href = "login.html";
-        return null;
+    async function ensureAdmin() {
+      const ref = doc(db, "users", sessionUser.username);
+      const snap = await getDoc(ref);
+      if (!snap.exists() || (snap.data().role !== "admin")) {
+        window.location.href = "index.html";
       }
     }
 
-    async function hash(text) {
-      const enc = new TextEncoder();
-      const data = enc.encode(text);
-      const buf = await crypto.subtle.digest("SHA-256", data);
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    await ensureAdmin();
+
+    // ---- Helpers ----
+    function formatTime(ts) {
+      if (!ts) return "";
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleString();
     }
 
+    function generatePassword(len = 10) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+      let out = "";
+      for (let i = 0; i < len; i++) {
+        out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return out;
+    }
+
+    // ---- Load pending approvals & users ----
     async function loadUsers() {
-      setStatus("Loading users...");
-      const snap = await getDocs(collection(db, "users"));
-      const users = [];
-      snap.forEach(d => users.push(d.data()));
+      const col = collection(db, "users");
+      const snaps = await getDocs(col);
 
-      users.sort((a,b) => a.username.localeCompare(b.username));
+      const pendingContainer = document.getElementById("pending-list");
+      const userContainer = document.getElementById("user-list");
+      pendingContainer.innerHTML = "";
+      userContainer.innerHTML = "";
 
-      if (!users.length) {
-        usersListEl.innerHTML = '<div class="text-xs text-slate-500">No users found.</div>';
-        setStatus("");
-        return;
-      }
+      snaps.forEach(snap => {
+        const data = snap.data();
+        const username = snap.id;
+        const role = data.role || "untrusted";
+        const approved = !!data.approved;
 
-      usersListEl.innerHTML = "";
-      for (const u of users) {
+        if (!approved) {
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between bg-slate-800/60 rounded-md px-3 py-2";
+
+          div.innerHTML = `
+            <div>
+              <div class="font-semibold">${username}</div>
+              <div class="text-xs text-gray-400">Role: ${role}</div>
+            </div>
+            <div class="flex gap-2">
+              <button data-approve="${username}" class="px-2 py-1 text-xs bg-green-600 rounded-md">Approve</button>
+              <button data-deny="${username}" class="px-2 py-1 text-xs bg-red-600 rounded-md">Delete</button>
+            </div>
+          `;
+          pendingContainer.appendChild(div);
+        }
+
+        // existing users
         const row = document.createElement("div");
-        row.className = "py-3 flex items-center justify-between";
+        row.className = "flex items-center justify-between bg-slate-800/60 rounded-md px-3 py-2";
 
         row.innerHTML = `
           <div>
-            <div class="font-semibold text-slate-100 text-sm">${u.username}</div>
-            <div class="text-xs text-slate-400">
-              ROLE: <span class="font-semibold">${(u.role || "untrusted").toUpperCase()}</span> ·
-              STATUS: <span class="${u.approved ? 'text-green-400' : 'text-red-400'}">${u.approved ? 'APPROVED' : 'PENDING'}</span>
-            </div>
+            <div class="font-semibold">${username}</div>
+            <div class="text-xs text-gray-400">Role: ${role} • Approved: ${approved}</div>
           </div>
-          <div class="flex gap-2 text-xs">
-            <select class="role-select px-2 py-1 rounded bg-slate-800 border border-slate-600"
-                    data-user="${u.username}">
-              <option value="untrusted" ${u.role === 'untrusted' ? 'selected' : ''}>Untrusted</option>
-              <option value="trusted" ${u.role === 'trusted' ? 'selected' : ''}>Trusted</option>
-              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+          <div class="flex gap-2 items-center">
+            <select data-role="${username}" class="bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1">
+              <option value="untrusted"${role==="untrusted"?" selected":""}>Untrusted</option>
+              <option value="trusted"${role==="trusted"?" selected":""}>Trusted</option>
+              <option value="admin"${role==="admin"?" selected":""}>Admin</option>
             </select>
-            <button class="toggle-approve px-2 py-1 rounded ${u.approved ? 'bg-yellow-600' : 'bg-green-600'}"
-                    data-user="${u.username}">
-              ${u.approved ? 'Revoke' : 'Approve'}
-            </button>
-            <button class="delete-user px-2 py-1 rounded bg-red-700"
-                    data-user="${u.username}">
-              Delete
-            </button>
+            <button data-save-role="${username}" class="px-2 py-1 text-xs bg-blue-600 rounded-md">Save</button>
           </div>
         `;
-
-        usersListEl.appendChild(row);
-      }
-
-      // hook up events
-      usersListEl.querySelectorAll(".role-select").forEach(sel => {
-        sel.addEventListener("change", async () => {
-          const username = sel.getAttribute("data-user");
-          const role = sel.value;
-          await setDoc(doc(db, "users", username), { role }, { merge: true });
-          setStatus(`Role updated for ${username}`);
-          loadUsers();
-        });
+        userContainer.appendChild(row);
       });
 
-      usersListEl.querySelectorAll(".toggle-approve").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const username = btn.getAttribute("data-user");
-          const userDoc = users.find(u => u.username === username);
-          const next = !userDoc.approved;
-          await setDoc(doc(db, "users", username), { approved: next }, { merge: true });
-          setStatus(`Approval updated for ${username}`);
+      // Handlers
+      document.querySelectorAll("[data-approve]").forEach(btn => {
+        btn.onclick = async () => {
+          const u = btn.dataset.approve;
+          await updateDoc(doc(db, "users", u), { approved: true });
           loadUsers();
-        });
+        };
       });
 
-      usersListEl.querySelectorAll(".delete-user").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const username = btn.getAttribute("data-user");
-          if (!confirm(`Delete user ${username}?`)) return;
-          await deleteDoc(doc(db, "users", username));
-          setStatus(`Deleted ${username}`);
+      document.querySelectorAll("[data-deny]").forEach(btn => {
+        btn.onclick = async () => {
+          const u = btn.dataset.deny;
+          await deleteDoc(doc(db, "users", u));
           loadUsers();
-        });
+        };
       });
 
-      setStatus("");
+      document.querySelectorAll("[data-save-role]").forEach(btn => {
+        btn.onclick = async () => {
+          const u = btn.dataset.saveRole;
+          const sel = document.querySelector(`[data-role="${u}"]`);
+          await updateDoc(doc(db, "users", u), { role: sel.value });
+          loadUsers();
+        };
+      });
     }
 
-    // Create user
-    document.getElementById("create-user").addEventListener("click", async () => {
-      const usernameInput = document.getElementById("new-username");
-      const passwordInput = document.getElementById("new-password");
-      const roleSelect = document.getElementById("new-role");
+    // ---- Load password reset requests ----
+    async function loadResets() {
+      const col = collection(db, "passwordResets");
+      const snaps = await getDocs(col);
+      const container = document.getElementById("reset-list");
+      container.innerHTML = "";
 
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-      const role = roleSelect.value;
-
-      if (!username || !password) {
-        setStatus("Enter username and password.");
-        return;
-      }
-      if (username.includes(" ")) {
-        setStatus("Username cannot contain spaces.");
+      if (snaps.empty) {
+        container.innerHTML = `<div class="text-xs text-gray-500">No pending password reset requests.</div>`;
         return;
       }
 
-      const hashed = await hash(password);
-      await setDoc(doc(db, "users", username), {
-        username,
-        passwordHash: hashed,
-        role,
-        approved: true,
-        createdAt: new Date().toISOString()
+      snaps.forEach(snap => {
+        const data = snap.data();
+        const username = data.username || snap.id;
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between bg-slate-800/60 rounded-md px-3 py-2";
+
+        row.innerHTML = `
+          <div>
+            <div class="font-semibold">${username}</div>
+            <div class="text-xs text-gray-400">Requested: ${formatTime(data.requestedAt)}</div>
+          </div>
+          <div class="flex gap-2">
+            <button data-gen="${username}" class="px-2 py-1 text-xs bg-indigo-600 rounded-md">Generate</button>
+            <button data-manual="${username}" class="px-2 py-1 text-xs bg-amber-500 rounded-md">Manual</button>
+            <button data-deny-reset="${username}" class="px-2 py-1 text-xs bg-red-600 rounded-md">Deny</button>
+          </div>
+        `;
+        container.appendChild(row);
       });
 
-      usernameInput.value = "";
-      passwordInput.value = "";
-      roleSelect.value = "untrusted";
-      setStatus(`User ${username} created.`);
-      loadUsers();
-    });
+      // Generate temp password (one-time)
+      document.querySelectorAll("[data-gen]").forEach(btn => {
+        btn.onclick = async () => {
+          const u = btn.dataset.gen;
+          const tempPw = generatePassword(10);
 
-    // Map picker + logout
-    document.getElementById("btn-map-picker").addEventListener("click", () => {
-      window.location.href = "admin-map-picker.html";
-    });
-    document.getElementById("btn-logout").addEventListener("click", () => {
-      localStorage.removeItem("saintsUser");
-      window.location.href = "login.html";
-    });
+          await updateDoc(doc(db, "users", u), {
+            password: tempPw,
+            mustChangePassword: true
+          });
 
-    // Init
-    const me = ensureAdmin();
-    if (me) {
-      loadUsers();
+          await deleteDoc(doc(db, "passwordResets", u));
+
+          alert(`Temporary one-time password for ${u}:\n\n${tempPw}\n\nShare this with them. They must set a new password after logging in.`);
+          loadResets();
+        };
+      });
+
+      // Manual password
+      document.querySelectorAll("[data-manual]").forEach(btn => {
+        btn.onclick = async () => {
+          const u = btn.dataset.manual;
+          const pw = prompt("Enter a temporary one-time password (min 4 characters):");
+          if (!pw) return;
+          if (pw.length < 4) {
+            alert("Password must be at least 4 characters.");
+            return;
+          }
+
+          await updateDoc(doc(db, "users", u), {
+            password: pw,
+            mustChangePassword: true
+          });
+
+          await deleteDoc(doc(db, "passwordResets", u));
+
+          alert(`Temporary one-time password set for ${u}. They will be forced to choose a new one on login.`);
+          loadResets();
+        };
+      });
+
+      // Deny request
+      document.querySelectorAll("[data-deny-reset]").forEach(btn => {
+        btn.onclick = async () => {
+          const u = btn.dataset.denyReset;
+          await deleteDoc(doc(db, "passwordResets", u));
+          loadResets();
+        };
+      });
     }
+
+    loadUsers();
+    loadResets();
   </script>
 </body>
 </html>
