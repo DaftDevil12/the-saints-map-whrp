@@ -61,40 +61,39 @@
   <p class="text-gray-300 mb-10">Select a panel below to begin:</p>
 
   <!-- FIXED GRID -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
 
-  <!-- Row 1 -->
-  <a id="btn-shared" href="sharedmap.html" class="card hidden">
-    <h2 class="text-xl font-semibold mb-2 text-blue-300">🌍 Shared Map</h2>
-    <p class="text-gray-400 text-sm">Collaborative map for trusted members.</p>
-  </a>
+    <!-- Row 1 -->
+    <a id="btn-shared" href="sharedmap.html" class="card hidden">
+      <h2 class="text-xl font-semibold mb-2 text-blue-300">🌍 Shared Map</h2>
+      <p class="text-gray-400 text-sm">Collaborative map for trusted members.</p>
+    </a>
 
-  <a id="btn-personal" href="personal-map.html" class="card">
-    <h2 class="text-xl font-semibold mb-2 text-green-300">🗺 Personal Map</h2>
-    <p class="text-gray-400 text-sm">Your own private map.</p>
-  </a>
+    <a id="btn-personal" href="personal-map.html" class="card">
+      <h2 class="text-xl font-semibold mb-2 text-green-300">🗺 Personal Map</h2>
+      <p class="text-gray-400 text-sm">Your own private map.</p>
+    </a>
 
-  <!-- Row 2 — swapped -->
-  <a id="btn-finances" href="finances.html" class="card hidden">
-    <h2 class="text-xl font-semibold mb-2 text-purple-300">💰 Finances</h2>
-    <p class="text-gray-400 text-sm">View & manage Saints finances.</p>
-  </a>
+    <!-- Row 2 -->
+    <a id="btn-finances" href="finances.html" class="card hidden">
+      <h2 class="text-xl font-semibold mb-2 text-purple-300">💰 Finances</h2>
+      <p class="text-gray-400 text-sm">View & manage Saints finances.</p>
+    </a>
 
-  <a id="btn-inventory" href="inventory.html" class="card hidden">
-    <h2 class="text-xl font-semibold mb-2 text-yellow-300">📦 Inventory Management</h2>
-    <p class="text-gray-400 text-sm">Manage Saints inventory.</p>
-  </a>
+    <a id="btn-inventory" href="inventory.html" class="card hidden">
+      <h2 class="text-xl font-semibold mb-2 text-yellow-300">📦 Inventory Management</h2>
+      <p class="text-gray-400 text-sm">Manage Saints inventory.</p>
+    </a>
 
-  <!-- Row 3 — Admin panel now alone -->
-  <a id="btn-admin" href="admin.html" class="card hidden md:col-span-2">
-    <h2 class="text-xl font-semibold mb-2 text-red-300">🛡 Admin Panel</h2>
-    <p class="text-gray-400 text-sm">Approve users & manage roles.</p>
-  </a>
+    <!-- Row 3 (full width) -->
+    <a id="btn-admin" href="admin.html" class="card hidden md:col-span-2">
+      <h2 class="text-xl font-semibold mb-2 text-red-300">🛡 Admin Panel</h2>
+      <p class="text-gray-400 text-sm">Approve users & manage roles.</p>
+    </a>
 
-</div>
+  </div>
 
-  <button id="logout-btn"
-    class="mt-10 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-md text-white">
+  <button id="logout-btn" class="mt-10 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-md text-white">
     Logout
   </button>
 
@@ -150,20 +149,14 @@
     const role = data.role || "untrusted";
     document.getElementById("username").textContent = sessionUser.username;
 
-    // Shared map
     if (role === "trusted" || role === "admin") {
       document.getElementById("btn-shared").classList.remove("hidden");
-    }
-
-    // Admin panel
-    if (role === "admin") {
-      document.getElementById("btn-admin").classList.remove("hidden");
-    }
-
-    // Inventory + finances (trusted & admin)
-    if (role === "trusted" || role === "admin") {
       document.getElementById("btn-inventory").classList.remove("hidden");
       document.getElementById("btn-finances").classList.remove("hidden");
+    }
+
+    if (role === "admin") {
+      document.getElementById("btn-admin").classList.remove("hidden");
     }
   }
 
