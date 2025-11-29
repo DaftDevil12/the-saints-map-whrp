@@ -59,6 +59,14 @@
   <h1 class="text-3xl font-bold text-blue-400 mb-2">💰 Saints Finances</h1>
   <p class="text-gray-400 mb-6">View and manage financial entries</p>
 
+  <!-- Total Balance Display -->
+  <div class="card w-full max-w-xl mb-6">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xl font-semibold">Current Balance</h2>
+      <p id="total-balance" class="text-3xl font-bold">$0</p>
+    </div>
+  </div>
+
   <!-- Add Entry (trusted/admin only) -->
   <div id="add-section" class="card w-full max-w-xl mb-8 hidden">
     <h2 class="text-xl font-semibold mb-3">Add Entry</h2>
@@ -149,19 +157,27 @@
   loadRole();
 
   const listEl = document.getElementById("finance-list");
+  const totalEl = document.getElementById("total-balance");
 
   // Display finance entries
   const q = query(collection(db, "finances"), orderBy("timestamp", "desc"));
 
   onSnapshot(q, (snapshot) => {
     listEl.innerHTML = "";
+    
+    // Calculate total
+    let total = 0;
+    
     if (snapshot.empty) {
       listEl.innerHTML = `<p class="text-gray-500">No entries yet.</p>`;
+      totalEl.textContent = "$0";
+      totalEl.className = "text-3xl font-bold text-gray-400";
       return;
     }
 
     snapshot.forEach(doc => {
       const f = doc.data();
+      total += f.amount;
 
       const color = f.amount >= 0 ? "text-green-400" : "text-red-400";
 
@@ -171,7 +187,7 @@
       item.innerHTML = `
         <div class="flex justify-between">
           <h3 class="text-xl font-bold">${f.title}</h3>
-          <p class="font-bold ${color}">${f.amount}</p>
+          <p class="font-bold ${color}">${f.amount >= 0 ? '+' : ''}${f.amount}</p>
         </div>
         <p class="text-gray-400 text-sm mt-1">${f.notes || ""}</p>
         <p class="text-xs text-gray-500 mt-2">Added by: ${f.author}</p>
@@ -179,6 +195,16 @@
 
       listEl.appendChild(item);
     });
+
+    // Update total display
+    totalEl.textContent = `$${total.toLocaleString()}`;
+    if (total > 0) {
+      totalEl.className = "text-3xl font-bold text-green-400";
+    } else if (total < 0) {
+      totalEl.className = "text-3xl font-bold text-red-400";
+    } else {
+      totalEl.className = "text-3xl font-bold text-gray-400";
+    }
   });
 
   // Add finance entry
@@ -196,7 +222,7 @@
       title: title,
       amount: amount,
       notes: notes,
-      author: user.username,     // 🔥 required for Firestore rules
+      author: user.username,
       timestamp: Date.now()
     });
 
