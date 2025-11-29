@@ -1,4 +1,306 @@
-/* Color blind mode styles - Optimized for Deuteranopia + Tritanopia */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SAINTS_NET://MAINFRAME</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridScroll 20s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes gridScroll {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        transparent 50%,
+        rgba(0, 255, 0, 0.02) 50%
+      );
+      background-size: 100% 4px;
+      animation: scanline 8s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes scanline {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100vh); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .glitch {
+      text-shadow: 
+        0.05em 0 0 rgba(255, 0, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+        0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      animation: glitch 500ms infinite;
+    }
+
+    @keyframes glitch {
+      0% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      14% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      15% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      49% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      50% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      99% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      100% {
+        text-shadow: 
+          -0.025em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+      padding: 30px;
+      border-bottom: 2px solid #0f0;
+      position: relative;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #0f0, transparent);
+      box-shadow: 0 0 10px #0f0;
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #0f0;
+      box-shadow: 0 0 5px #0f0;
+      display: inline-block;
+      margin: 0 3px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .blink {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .module {
+      background: rgba(0, 20, 0, 0.8);
+      border: 2px solid #0f0;
+      padding: 25px;
+      position: relative;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .module::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, transparent, #0f0, transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: -1;
+    }
+
+    .module:hover {
+      box-shadow: 
+        0 0 20px rgba(0, 255, 0, 0.5),
+        inset 0 0 20px rgba(0, 255, 0, 0.1);
+      transform: translateY(-5px);
+    }
+
+    .module:hover::before {
+      opacity: 0.3;
+      animation: borderRotate 3s linear infinite;
+    }
+
+    @keyframes borderRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .module-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+      display: block;
+      text-shadow: 0 0 10px #0f0;
+    }
+
+    .module-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .module-desc {
+      font-size: 12px;
+      opacity: 0.7;
+      line-height: 1.6;
+    }
+
+    .module-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 10px;
+      padding: 3px 8px;
+      border: 1px solid #0f0;
+      background: rgba(0, 255, 0, 0.1);
+    }
+
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: 2px solid #f00;
+      color: #f00;
+      padding: 8px 15px;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      z-index: 10;
+    }
+
+    .logout-btn:hover {
+      background: #f00;
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+    }
+
+    .colorblind-btn {
+      position: fixed;
+      top: 20px;
+      right: 160px;
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      padding: 8px 12px;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 12px;
+      z-index: 10;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      letter-spacing: 1px;
+    }
+
+    .colorblind-btn:hover {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+    }
+
+    /* Color blind mode styles - Optimized for Deuteranopia + Tritanopia */
     body.colorblind-mode {
       color: #00e5ff; /* Bright cyan - highly visible */
     }
@@ -96,3 +398,232 @@
       color: #00e5ff;
       text-shadow: 0 0 5px #00e5ff;
     }
+
+    #top-watermark {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 100px;
+      opacity: 0.3;
+      pointer-events: none;
+      filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+      z-index: 10;
+    }
+
+    #bottom-watermark {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.4;
+      font-size: 10px;
+      color: #0f0;
+      letter-spacing: 2px;
+      z-index: 10;
+    }
+
+    .user-info {
+      position: fixed;
+      top: 20px;
+      left: 140px;
+      font-size: 11px;
+      opacity: 0.7;
+      z-index: 10;
+    }
+
+    .access-level {
+      color: #ff0;
+      text-shadow: 0 0 5px #ff0;
+    }
+  </style>
+</head>
+<body>
+  <img id="top-watermark" src="watermark.png" alt="Saints Logo" />
+  <div id="bottom-watermark">[ SYSTEM ARCHITECT: DANTE_ALBERTS ]</div>
+  
+  <div class="user-info">
+    <div>USER: <span id="username">LOADING...</span></div>
+    <div>ACCESS: <span class="access-level" id="role">VERIFYING...</span></div>
+  </div>
+
+  <button class="logout-btn" onclick="logout()">[ DISCONNECT ]</button>
+  
+  <!-- Color Blind Mode Toggle -->
+  <button class="colorblind-btn" onclick="toggleColorBlindMode()">
+    <span id="cb-icon">👁️</span>
+  </button>
+
+  <div class="container">
+    <div class="header">
+      <div style="margin-bottom: 10px;">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot" style="animation-delay: 0.3s;"></span>
+        <span class="terminal-dot" style="animation-delay: 0.6s;"></span>
+      </div>
+      <h1 class="glitch" style="font-size: 42px; margin-bottom: 10px;">SAINTS_NETWORK</h1>
+      <div style="font-size: 14px; opacity: 0.7; letter-spacing: 3px;">MAINFRAME ACCESS PORTAL</div>
+      <div style="font-size: 10px; opacity: 0.5; margin-top: 10px;">
+        <span class="blink">█</span> SECURE CONNECTION ESTABLISHED
+      </div>
+    </div>
+
+    <div class="module-grid">
+      <!-- Personal Map Module -->
+      <div class="module" onclick="location.href='personalmap.html'">
+        <span class="module-status">PRIVATE</span>
+        <span class="module-icon">🗺️</span>
+        <div class="module-title">> Personal Map</div>
+        <div class="module-desc">
+          Access your private tactical map. 
+          Mark locations, routes, and points of interest.
+          Data encrypted and isolated from network.
+        </div>
+      </div>
+
+      <!-- Shared Map Module -->
+      <div class="module" onclick="location.href='sharedmap.html'">
+        <span class="module-status">COLLABORATIVE</span>
+        <span class="module-icon">🌍</span>
+        <div class="module-title">> Shared Map</div>
+        <div class="module-desc">
+          Collaborative intelligence map.
+          Real-time updates from trusted operatives.
+          Requires elevated clearance.
+        </div>
+      </div>
+
+      <!-- Finances Module -->
+      <div class="module" onclick="location.href='finance-connect.html'">
+        <span class="module-status">RESTRICTED</span>
+        <span class="module-icon">💰</span>
+        <div class="module-title">> Financial Ledger</div>
+        <div class="module-desc">
+          Track organization resources and transactions.
+          View balance, income, and expenditures.
+          Trusted members can log entries.
+        </div>
+      </div>
+
+      <!-- Inventory Module -->
+      <div class="module" onclick="location.href='inventory.html'">
+        <span class="module-status">ACTIVE</span>
+        <span class="module-icon">📦</span>
+        <div class="module-title">> Inventory System</div>
+        <div class="module-desc">
+          Asset management and equipment tracking.
+          Monitor supplies, weapons, and resources.
+          Real-time stock updates.
+        </div>
+      </div>
+
+      <!-- Members Module -->
+      <div class="module" onclick="location.href='members.html'">
+        <span class="module-status">CLASSIFIED</span>
+        <span class="module-icon">👥</span>
+        <div class="module-title">> Personnel Database</div>
+        <div class="module-desc">
+          Access member profiles and clearance levels.
+          View active operations and assignments.
+          Admin-only modifications.
+        </div>
+      </div>
+
+      <!-- Communications Module -->
+      <div class="module" onclick="location.href='comms.html'">
+        <span class="module-status">ENCRYPTED</span>
+        <span class="module-icon">📡</span>
+        <div class="module-title">> Communications Hub</div>
+        <div class="module-desc">
+          Secure messaging and announcements.
+          End-to-end encrypted channels.
+          Mission briefings and updates.
+        </div>
+      </div>
+
+      <!-- Admin Panel Module (Only visible to admins) -->
+      <div class="module" id="admin-module" onclick="location.href='admin.html'" style="display: none;">
+        <span class="module-status">ADMIN ONLY</span>
+        <span class="module-icon">⚙️</span>
+        <div class="module-title">> Admin Panel</div>
+        <div class="module-desc">
+          System administration and user management.
+          Configure permissions and access levels.
+          Monitor network security.
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 60px; opacity: 0.4; font-size: 11px;">
+      <div style="margin-bottom: 10px;">[ SYSTEM STATUS: OPERATIONAL ]</div>
+      <div>ACTIVE CONNECTIONS: <span id="active-users">1</span> | UPTIME: 99.7% | LATENCY: 12ms</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+      authDomain: "the-saints-2f622.firebaseapp.com",
+      projectId: "the-saints-2f622",
+      storageBucket: "the-saints-2f622.firebasestorage.app",
+      messagingSenderId: "131705359242",
+      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
+      measurementId: "G-36PY404Q8N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Load color blind preference FIRST before anything renders
+    if (localStorage.getItem('colorblindMode') === 'true') {
+      document.body.classList.add('colorblind-mode');
+    }
+
+    // Load session user
+    const raw = localStorage.getItem("saintsUser");
+    if (!raw) {
+      window.location.href = "login.html";
+    }
+
+    let user;
+    try { 
+      user = JSON.parse(raw); 
+      document.getElementById("username").textContent = user.username.toUpperCase();
+      document.getElementById("role").textContent = (user.role || "UNTRUSTED").toUpperCase();
+    }
+    catch { 
+      window.location.href = "login.html"; 
+    }
+
+    // Check if user is admin and show admin module
+    const userRef = doc(db, "users", user.username);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      if (userData.role === "admin") {
+        document.getElementById("admin-module").style.display = "block";
+      }
+    }
+
+    // Count active users (simulate)
+    const usersQuery = query(collection(db, "users"));
+    onSnapshot(usersQuery, (snapshot) => {
+      document.getElementById("active-users").textContent = snapshot.size;
+    });
+
+    window.logout = function() {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+    };
+
+    // Color blind mode toggle
+    window.toggleColorBlindMode = function() {
+      document.body.classList.toggle('colorblind-mode');
+      const isColorBlind = document.body.classList.contains('colorblind-mode');
+      localStorage.setItem('colorblindMode', isColorBlind);
+    };
+  </script>
+</body>
+</html>
