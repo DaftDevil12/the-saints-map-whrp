@@ -4,282 +4,158 @@
 <meta charset="UTF-8" />
 <title>The Saints – Admin Panel</title>
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
   body {
-    background: linear-gradient(to bottom right, #020617, #0f172a);
-    color: #e5e7eb;
+    background: linear-gradient(to bottom right, #0f172a, #1e293b);
+    color: #e2e8f0;
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
   }
-  .card {
-    background: rgba(15,23,42,0.9);
-    border-radius: 16px;
-    border: 1px solid rgba(59,130,246,0.5);
-    padding: 20px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-  }
+  .card { background: rgba(30,41,59,0.8); border:1px solid rgba(59,130,246,0.4); padding:20px; border-radius:12px; backdrop-filter:blur(6px); }
+  .btn { padding:6px 10px; border-radius:6px; font-weight:600; }
+  .btn-blue { background:#3b82f6; }
+  .btn-red { background:#dc2626; }
+  .btn-yellow { background:#f59e0b; }
+  .btn-green { background:#10b981; }
 </style>
 </head>
+
 <body class="p-6">
-  <img src="watermark.png" style="position:fixed;top:20px;right:20px;width:120px;opacity:.5;pointer-events:none;" />
 
-  <a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
-  <h1 class="text-3xl font-bold text-blue-400 mb-6">🛡 Admin Control Panel</h1>
+<a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- User approval & roles -->
-    <div class="card">
-      <h2 class="text-xl font-semibold mb-3 text-rose-300">User Approvals & Roles</h2>
-      <div id="pending-users" class="mb-5">
-        <h3 class="text-sm font-semibold text-gray-300 mb-2">Pending Approvals</h3>
-        <div id="pending-list" class="space-y-2 text-sm text-gray-200"></div>
-      </div>
+<h1 class="text-3xl font-bold text-blue-400 mb-6">🛡 Admin Panel</h1>
 
+<!-- CREATE ACCOUNT -->
+<div class="card mb-8">
+  <h2 class="text-xl font-bold mb-3">Create New Account</h2>
+  <input id="new-username" class="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700" placeholder="Username">
+  <button id="create-btn" class="btn btn-blue w-full">Create Account (One-Time Password)</button>
+</div>
+
+<!-- USER LIST -->
+<h2 class="text-xl font-bold mb-3">All Users</h2>
+<div id="users-list" class="space-y-3"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
+  authDomain: "the-saints-2f622.firebaseapp.com",
+  projectId: "the-saints-2f622",
+  storageBucket: "the-saints-2f622.firebasestorage.app",
+  messagingSenderId: "131705359242",
+  appId: "1:131705359242:web:92fa93f8a10a8ae34a5673"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Verify session
+const raw = localStorage.getItem("saintsUser");
+if (!raw) window.location.href = "login.html";
+let sessionUser = JSON.parse(raw);
+if (sessionUser.username !== "Dante-Alberts") window.location.href = "index.html";
+
+// Load Users
+async function loadUsers() {
+  const snap = await getDocs(collection(db, "users"));
+  const list = document.getElementById("users-list");
+  list.innerHTML = "";
+
+  snap.forEach(docSnap => {
+    const u = docSnap.data();
+
+    const row = document.createElement("div");
+    row.className = "card flex justify-between items-center";
+
+    row.innerHTML = `
       <div>
-        <h3 class="text-sm font-semibold text-gray-300 mb-2">Existing Users</h3>
-        <div id="user-list" class="space-y-2 text-sm text-gray-200"></div>
+        <div class="text-lg font-bold">${u.username}</div>
+        <div class="text-sm text-gray-400">Role: ${u.role}</div>
+        <div class="text-sm text-gray-400">Approved: ${u.approved}</div>
       </div>
-    </div>
 
-    <!-- Password reset requests -->
-    <div class="card">
-      <h2 class="text-xl font-semibold mb-3 text-blue-300">Password Reset Requests</h2>
-      <p class="text-xs text-gray-400 mb-3">
-        All new or reset passwords are <span class="font-semibold">one-time</span>. Users are forced to change them on next login.
-      </p>
-      <div id="reset-list" class="space-y-2 text-sm text-gray-200"></div>
-    </div>
-  </div>
+      <div class="flex gap-2">
+        <button class="btn btn-yellow" data-reset="${u.username}">Reset PW</button>
+        <button class="btn btn-blue" data-openmap="${u.username}">Open Map</button>
+        <button class="btn btn-green" data-promote="${u.username}">Promote</button>
+        <button class="btn btn-red" data-demote="${u.username}">Demote</button>
+        <button class="btn btn-red" data-delete="${u.username}">Delete</button>
+      </div>
+    `;
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      updateDoc,
-      collection,
-      getDocs,
-      setDoc,
-      deleteDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    list.appendChild(row);
+  });
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyA2U-NjxMLD0uu3HLT79RQYx-t8L9hK40M",
-      authDomain: "the-saints-2f622.firebaseapp.com",
-      projectId: "the-saints-2f622",
-      storageBucket: "the-saints-2f622.firebasestorage.app",
-      messagingSenderId: "131705359242",
-      appId: "1:131705359242:web:92fa93f8a10a8ae34a5673",
-      measurementId: "G-36PY404Q8N"
-    };
+  // attach events
+  document.querySelectorAll("[data-reset]").forEach(btn=>{
+    btn.onclick = ()=>resetPW(btn.dataset.reset);
+  });
+  document.querySelectorAll("[data-openmap]").forEach(btn=>{
+    btn.onclick = ()=>openMap(btn.dataset.openmap);
+  });
+  document.querySelectorAll("[data-promote]").forEach(btn=>{
+    btn.onclick = ()=>promote(btn.dataset.promote);
+  });
+  document.querySelectorAll("[data-demote]").forEach(btn=>{
+    btn.onclick = ()=>demote(btn.dataset.demote);
+  });
+  document.querySelectorAll("[data-delete]").forEach(btn=>{
+    btn.onclick = ()=>deleteUser(btn.dataset.delete);
+  });
+}
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+loadUsers();
 
-    // ---- Admin gate ----
-    const raw = localStorage.getItem("saintsUser");
-    if (!raw) window.location.href = "login.html";
+// Create account
+document.getElementById("create-btn").onclick = async () => {
+  const username = document.getElementById("new-username").value.trim();
+  if (!username) return alert("Enter a username");
 
-    let sessionUser;
-    try { sessionUser = JSON.parse(raw); } catch {
-      localStorage.removeItem("saintsUser");
-      window.location.href = "login.html";
-    }
+  const oneTimePassword = Math.random().toString(36).slice(2, 8);
 
-    async function ensureAdmin() {
-      const ref = doc(db, "users", sessionUser.username);
-      const snap = await getDoc(ref);
-      if (!snap.exists() || (snap.data().role !== "admin")) {
-        window.location.href = "index.html";
-      }
-    }
+  await setDoc(doc(db, "users", username), {
+    username,
+    password: oneTimePassword,
+    role: "untrusted",
+    approved: true,
+    mustReset: true
+  });
 
-    await ensureAdmin();
+  alert("Account created!\nOne-time password: " + oneTimePassword);
+  loadUsers();
+};
 
-    // ---- Helpers ----
-    function formatTime(ts) {
-      if (!ts) return "";
-      const d = ts.toDate ? ts.toDate() : new Date(ts);
-      return d.toLocaleString();
-    }
+// Reset password
+async function resetPW(username) {
+  const newPW = Math.random().toString(36).slice(2, 8);
+  await updateDoc(doc(db, "users", username), {
+    password: newPW,
+    mustReset: true
+  });
+  alert("Temporary password for " + username + ": " + newPW);
+}
 
-    function generatePassword(len = 10) {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-      let out = "";
-      for (let i = 0; i < len; i++) {
-        out += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return out;
-    }
+// Promote / demote
+async function promote(username) {
+  await updateDoc(doc(db, "users", username), { role: "trusted" });
+  loadUsers();
+}
+async function demote(username) {
+  await updateDoc(doc(db, "users", username), { role: "untrusted" });
+  loadUsers();
+}
 
-    // ---- Load pending approvals & users ----
-    async function loadUsers() {
-      const col = collection(db, "users");
-      const snaps = await getDocs(col);
+// Open user map
+function openMap(username) {
+  window.location.href = "personal-map.html?user=" + username + "&admin=true";
+}
+</script>
 
-      const pendingContainer = document.getElementById("pending-list");
-      const userContainer = document.getElementById("user-list");
-      pendingContainer.innerHTML = "";
-      userContainer.innerHTML = "";
-
-      snaps.forEach(snap => {
-        const data = snap.data();
-        const username = snap.id;
-        const role = data.role || "untrusted";
-        const approved = !!data.approved;
-
-        if (!approved) {
-          const div = document.createElement("div");
-          div.className = "flex items-center justify-between bg-slate-800/60 rounded-md px-3 py-2";
-
-          div.innerHTML = `
-            <div>
-              <div class="font-semibold">${username}</div>
-              <div class="text-xs text-gray-400">Role: ${role}</div>
-            </div>
-            <div class="flex gap-2">
-              <button data-approve="${username}" class="px-2 py-1 text-xs bg-green-600 rounded-md">Approve</button>
-              <button data-deny="${username}" class="px-2 py-1 text-xs bg-red-600 rounded-md">Delete</button>
-            </div>
-          `;
-          pendingContainer.appendChild(div);
-        }
-
-        // existing users
-        const row = document.createElement("div");
-        row.className = "flex items-center justify-between bg-slate-800/60 rounded-md px-3 py-2";
-
-        row.innerHTML = `
-          <div>
-            <div class="font-semibold">${username}</div>
-            <div class="text-xs text-gray-400">Role: ${role} • Approved: ${approved}</div>
-          </div>
-          <div class="flex gap-2 items-center">
-            <select data-role="${username}" class="bg-slate-900 border border-slate-600 text-xs rounded px-2 py-1">
-              <option value="untrusted"${role==="untrusted"?" selected":""}>Untrusted</option>
-              <option value="trusted"${role==="trusted"?" selected":""}>Trusted</option>
-              <option value="admin"${role==="admin"?" selected":""}>Admin</option>
-            </select>
-            <button data-save-role="${username}" class="px-2 py-1 text-xs bg-blue-600 rounded-md">Save</button>
-          </div>
-        `;
-        userContainer.appendChild(row);
-      });
-
-      // Handlers
-      document.querySelectorAll("[data-approve]").forEach(btn => {
-        btn.onclick = async () => {
-          const u = btn.dataset.approve;
-          await updateDoc(doc(db, "users", u), { approved: true });
-          loadUsers();
-        };
-      });
-
-      document.querySelectorAll("[data-deny]").forEach(btn => {
-        btn.onclick = async () => {
-          const u = btn.dataset.deny;
-          await deleteDoc(doc(db, "users", u));
-          loadUsers();
-        };
-      });
-
-      document.querySelectorAll("[data-save-role]").forEach(btn => {
-        btn.onclick = async () => {
-          const u = btn.dataset.saveRole;
-          const sel = document.querySelector(`[data-role="${u}"]`);
-          await updateDoc(doc(db, "users", u), { role: sel.value });
-          loadUsers();
-        };
-      });
-    }
-
-    // ---- Load password reset requests ----
-    async function loadResets() {
-      const col = collection(db, "passwordResets");
-      const snaps = await getDocs(col);
-      const container = document.getElementById("reset-list");
-      container.innerHTML = "";
-
-      if (snaps.empty) {
-        container.innerHTML = `<div class="text-xs text-gray-500">No pending password reset requests.</div>`;
-        return;
-      }
-
-      snaps.forEach(snap => {
-        const data = snap.data();
-        const username = data.username || snap.id;
-        const row = document.createElement("div");
-        row.className = "flex items-center justify-between bg-slate-800/60 rounded-md px-3 py-2";
-
-        row.innerHTML = `
-          <div>
-            <div class="font-semibold">${username}</div>
-            <div class="text-xs text-gray-400">Requested: ${formatTime(data.requestedAt)}</div>
-          </div>
-          <div class="flex gap-2">
-            <button data-gen="${username}" class="px-2 py-1 text-xs bg-indigo-600 rounded-md">Generate</button>
-            <button data-manual="${username}" class="px-2 py-1 text-xs bg-amber-500 rounded-md">Manual</button>
-            <button data-deny-reset="${username}" class="px-2 py-1 text-xs bg-red-600 rounded-md">Deny</button>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-
-      // Generate temp password (one-time)
-      document.querySelectorAll("[data-gen]").forEach(btn => {
-        btn.onclick = async () => {
-          const u = btn.dataset.gen;
-          const tempPw = generatePassword(10);
-
-          await updateDoc(doc(db, "users", u), {
-            password: tempPw,
-            mustChangePassword: true
-          });
-
-          await deleteDoc(doc(db, "passwordResets", u));
-
-          alert(`Temporary one-time password for ${u}:\n\n${tempPw}\n\nShare this with them. They must set a new password after logging in.`);
-          loadResets();
-        };
-      });
-
-      // Manual password
-      document.querySelectorAll("[data-manual]").forEach(btn => {
-        btn.onclick = async () => {
-          const u = btn.dataset.manual;
-          const pw = prompt("Enter a temporary one-time password (min 4 characters):");
-          if (!pw) return;
-          if (pw.length < 4) {
-            alert("Password must be at least 4 characters.");
-            return;
-          }
-
-          await updateDoc(doc(db, "users", u), {
-            password: pw,
-            mustChangePassword: true
-          });
-
-          await deleteDoc(doc(db, "passwordResets", u));
-
-          alert(`Temporary one-time password set for ${u}. They will be forced to choose a new one on login.`);
-          loadResets();
-        };
-      });
-
-      // Deny request
-      document.querySelectorAll("[data-deny-reset]").forEach(btn => {
-        btn.onclick = async () => {
-          const u = btn.dataset.denyReset;
-          await deleteDoc(doc(db, "passwordResets", u));
-          loadResets();
-        };
-      });
-    }
-
-    loadUsers();
-    loadResets();
-  </script>
 </body>
 </html>
