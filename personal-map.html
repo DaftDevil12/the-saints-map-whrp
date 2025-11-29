@@ -121,25 +121,26 @@
   <div id="top-banner" class="top-banner">
     Shared Map (Trusted+)
   </div>
-<a href="index.html"
-   id="dashboard-btn"
-   style="
-      position: absolute;
-      top: 15px;
-      left: 160px;
-      z-index: 1003;
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      border: 1px solid rgba(59,130,246,0.5);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      cursor: pointer;
-      text-decoration: none;
-   ">
-   ⬅ Dashboard
-</a>
+  <a href="index.html"
+     id="dashboard-btn"
+     style="
+        position: absolute;
+        top: 15px;
+        left: 160px;
+        z-index: 1003;
+        background: rgba(15,23,42,0.9);
+        color: #e5e7eb;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        border: 1px solid rgba(59,130,246,0.5);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        cursor: pointer;
+        text-decoration: none;
+     ">
+     ⬅ Dashboard
+  </a>
+  
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
     <div class="p-4 border-b border-gray-700">
@@ -263,108 +264,96 @@
     let currentShape = null;
     let currentColor = "#ef4444";
     let isDrawing = false;
-    let currentLineCoords = [];   // [{lat, lng}, ...]
-    let polygonPoints = [];       // [{lat, lng}, ...]
-    let lineFeatures = [];        // { id, coordinates: [{lat,lng}], color }
-    let shapeFeatures = [];       // rectangles/circles/polygons with coord objects
-    let textMarkers = [];         // { id, lat, lng, text, color, markerInstance }
-    let isApplyingRemote = false; // avoid save loops
+    let currentLineCoords = [];
+    let polygonPoints = [];
+    let lineFeatures = [];
+    let shapeFeatures = [];
+    let textMarkers = [];
+    let isApplyingRemote = false;
 
     // Get logged in user
-const rawUser = localStorage.getItem("saintsUser");
-if (!rawUser) window.location.href = "login.html";
+    const rawUser = localStorage.getItem("saintsUser");
+    if (!rawUser) window.location.href = "login.html";
 
-let user;
-try {
-  user = JSON.parse(rawUser);
-} catch {
-  localStorage.removeItem("saintsUser");
-  window.location.href = "login.html";
-}
+    let user;
+    try {
+      user = JSON.parse(rawUser);
+    } catch {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+    }
 
-// Personal map ID
-const mapId = "personal-" + user.username;
+    const mapId = "personal-" + user.username;
+    const mapDocRef = doc(db, "personalMaps", mapId);
 
-// Personal map document location
-const mapDocRef = doc(db, "personalMaps", mapId);
+    // AUTH / ROLE GUARD
+    async function ensureAccess() {
+      const raw = localStorage.getItem("saintsUser");
+      if (!raw) {
+        window.location.href = "login.html";
+        return;
+      }
 
+      let sessionUser;
+      try {
+        sessionUser = JSON.parse(raw);
+      } catch (e) {
+        localStorage.removeItem("saintsUser");
+        window.location.href = "login.html";
+        return;
+      }
 
-    // ---- AUTH / ROLE GUARD ----
-async function ensureAccess() {
-  const raw = localStorage.getItem("saintsUser");
-  if (!raw) {
-    window.location.href = "login.html";
-    return;
-  }
+      const userRef = doc(db, "users", sessionUser.username);
+      const snap = await getDoc(userRef);
 
-  let sessionUser;
-  try {
-    sessionUser = JSON.parse(raw);
-  } catch (e) {
-    localStorage.removeItem("saintsUser");
-    window.location.href = "login.html";
-    return;
-  }
+      if (!snap.exists()) {
+        localStorage.removeItem("saintsUser");
+        window.location.href = "login.html";
+        return;
+      }
 
-  const userRef = doc(db, "users", sessionUser.username);
-  const snap = await getDoc(userRef);
+      const data = snap.data();
+      if (!data.approved) {
+        window.location.href = "awaiting-approval.html";
+        return;
+      }
 
-  if (!snap.exists()) {
-    localStorage.removeItem("saintsUser");
-    window.location.href = "login.html";
-    return;
-  }
+      const banner = document.getElementById("top-banner");
+      banner.textContent = `Personal Map - ${sessionUser.username}`;
 
-  const data = snap.data();
-  if (!data.approved) {
-    window.location.href = "awaiting-approval.html";
-    return;
-  }
+      initMap();
+      setupMapInteractions();
+      initializeStorage();
+    }
 
-  // PERSONAL MAP: everyone can access
-  const role = data.role || "untrusted";
+    function initMap() {
+      map = L.map('map', {
+        crs: L.CRS.Simple,
+        minZoom: -2,
+        maxZoom: 4,
+        maxNativeZoom: 4,
+        center: [0, 0],
+        zoom: 0,
+        zoomSnap: 0.25,
+        zoomDelta: 0.5
+      });
 
-  // Update banner − personal map
-  const banner = document.getElementById("top-banner");
-  banner.textContent = `Personal Map - ${sessionUser.username}`;
+      const bounds = [[-256, -256], [256, 256]];
 
-initMap();
-setupMapInteractions();   // Drawing now works
-initializeStorage();
+      L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
+        minZoom: -2,
+        maxZoom: 4,
+        maxNativeZoom: 4,
+        noWrap: true,
+        tileSize: 256,
+        bounds: bounds,
+        attribution: '© Rockstar Games | GTA V UHD Map'
+      }).addTo(map);
 
-}
+      map.setMaxBounds(bounds);
+      map.fitBounds(bounds);
+    }
 
-
-function initMap() {
-  map = L.map('map', {
-    crs: L.CRS.Simple,
-    minZoom: -2,
-    maxZoom: 4,
-    maxNativeZoom: 4,
-    center: [0, 0],
-    zoom: 0,
-    zoomSnap: 0.25,
-    zoomDelta: 0.5
-  });
-
-  const bounds = [[-256, -256], [256, 256]];
-
-  L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
-    minZoom: -2,
-    maxZoom: 4,
-    maxNativeZoom: 4,
-    noWrap: true,
-    tileSize: 256,
-    bounds: bounds,
-    attribution: '© Rockstar Games | GTA V UHD Map'
-  }).addTo(map);
-
-  map.setMaxBounds(bounds);
-  map.fitBounds(bounds);
-}
-
-
-    // Ensure shapes always use Firestore-safe coordinate structures
     function fixShapeForFirestore(shape) {
       const s = { ...shape };
 
@@ -397,14 +386,12 @@ function initMap() {
       return s;
     }
 
-    // Apply remote Firestore data to the map
     function applyRemoteData(data) {
       isApplyingRemote = true;
 
       lineFeatures = Array.isArray(data.lines) ? data.lines : [];
       shapeFeatures = Array.isArray(data.shapes) ? data.shapes : [];
 
-      // Remove existing text markers from map
       textMarkers.forEach(t => t.markerInstance.remove());
       textMarkers = [];
 
@@ -420,14 +407,12 @@ function initMap() {
       isApplyingRemote = false;
     }
 
-    // Firestore initialization + live sync
     async function initializeStorage() {
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
         applyRemoteData(existing.data());
       }
 
-      // Live updates from Firestore
       onSnapshot(mapDocRef, (snapshot) => {
         if (!snapshot.exists()) return;
         const data = snapshot.data();
@@ -435,11 +420,9 @@ function initMap() {
       });
     }
 
-    // Save current map state to Firestore
     async function saveState() {
       if (!mapDocRef || isApplyingRemote) return;
 
-      // Ensure no nested arrays sneak in
       const safeLines = lineFeatures.map(line => ({
         ...line,
         coordinates: Array.isArray(line.coordinates)
@@ -471,7 +454,6 @@ function initMap() {
       }
     }
 
-    // Tool selection
     function setActiveTool(tool) {
       currentTool = tool;
       currentShape = null;
@@ -505,7 +487,6 @@ function initMap() {
       if (map) map.dragging.disable();
     }
 
-    // Event listeners for toolbar
     document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
     document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
     document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
@@ -544,7 +525,6 @@ function initMap() {
       alert('Shared map link copied to clipboard!');
     });
 
-    // Map interactions
     function setupMapInteractions() {
       let tempShapeStart = null;
 
@@ -631,7 +611,6 @@ function initMap() {
     }
 
     function redrawLines(includeTemp = false) {
-      // Remove old drawn lines
       if (!map) return;
 
       map.eachLayer(layer => {
@@ -640,7 +619,6 @@ function initMap() {
         }
       });
 
-      // Existing features
       lineFeatures.forEach(feature => {
         if (!Array.isArray(feature.coordinates)) return;
         const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
@@ -651,7 +629,6 @@ function initMap() {
           isDrawnLine: true
         }).addTo(map);
 
-        // delete-on-click for lines
         layer.on('click', async () => {
           if (confirm('Delete this line from the shared map for everyone?')) {
             lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
@@ -661,7 +638,6 @@ function initMap() {
         });
       });
 
-      // Temp line while drawing
       if (includeTemp && currentLineCoords.length > 0) {
         const tempLatLngs = currentLineCoords.map(p => [p.lat, p.lng]);
         L.polyline(tempLatLngs, {
@@ -674,7 +650,6 @@ function initMap() {
     }
 
     function redrawShapes() {
-      // Remove old shapes
       if (!map) return;
 
       map.eachLayer(layer => {
@@ -789,12 +764,10 @@ function initMap() {
       return markerObj;
     }
 
-    // Sidebar toggle
     window.toggleSidebar = function () {
       document.getElementById('sidebar').classList.toggle('collapsed');
     };
 
-    // Category selection (placeholder behavior)
     document.querySelectorAll('.category-item').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
@@ -802,6 +775,9 @@ function initMap() {
         alert('Category markers would be shown here: ' + item.dataset.category);
       });
     });
+
+    // Initialize everything
+    ensureAccess();
   </script>
 </body>
 </html>
