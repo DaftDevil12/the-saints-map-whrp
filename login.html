@@ -2,69 +2,309 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>The Saints – Login</title>
+  <title>SAINTS_NET://ACCESS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background: linear-gradient(to bottom right, #020617, #0f172a);
-      color: #e5e7eb;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
+      position: relative;
     }
-    .card {
-      background: rgba(15,23,42,0.9);
-      border-radius: 16px;
-      border: 1px solid rgba(59,130,246,0.5);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridScroll 20s linear infinite;
+      pointer-events: none;
     }
+
+    @keyframes gridScroll {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        transparent 50%,
+        rgba(0, 255, 0, 0.02) 50%
+      );
+      background-size: 100% 4px;
+      animation: scanline 8s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes scanline {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100vh); }
+    }
+
+    .glitch {
+      text-shadow: 
+        0.05em 0 0 rgba(255, 0, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+        0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      animation: glitch 500ms infinite;
+    }
+
+    @keyframes glitch {
+      0% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      14% {
+        text-shadow: 
+          0.05em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+          0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      15% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      49% {
+        text-shadow: 
+          -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
+          0.025em 0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.05em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      50% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      99% {
+        text-shadow: 
+          0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
+          0.05em 0 0 rgba(0, 255, 0, 0.75),
+          0 -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+      100% {
+        text-shadow: 
+          -0.025em 0 0 rgba(255, 0, 0, 0.75),
+          -0.025em -0.025em 0 rgba(0, 255, 0, 0.75),
+          -0.025em -0.05em 0 rgba(0, 0, 255, 0.75);
+      }
+    }
+
+    .terminal-box {
+      background: rgba(0, 0, 0, 0.95);
+      border: 2px solid #0f0;
+      box-shadow: 
+        0 0 20px rgba(0, 255, 0, 0.3),
+        inset 0 0 60px rgba(0, 255, 0, 0.05);
+      position: relative;
+      max-width: 500px;
+      width: 90%;
+      padding: 30px;
+    }
+
+    .terminal-header {
+      border-bottom: 1px solid #0f0;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #0f0;
+      box-shadow: 0 0 5px #0f0;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .blink {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    input {
+      background: rgba(0, 20, 0, 0.5);
+      border: 1px solid #0f0;
+      color: #0f0;
+      font-family: 'Courier Prime', monospace;
+      padding: 10px;
+      width: 100%;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    input:focus {
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      background: rgba(0, 30, 0, 0.7);
+    }
+
+    input::placeholder {
+      color: rgba(0, 255, 0, 0.4);
+    }
+
+    button {
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      padding: 12px;
+      width: 100%;
+      font-family: 'Courier Prime', monospace;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    button:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .link {
+      color: #0f0;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all 0.3s;
+      font-size: 12px;
+    }
+
+    .link:hover {
+      border-bottom-color: #0f0;
+      text-shadow: 0 0 5px #0f0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .field-group {
+      margin-bottom: 15px;
+    }
+
     #top-watermark {
       position: fixed;
       top: 20px;
       right: 20px;
       width: 120px;
-      opacity: 0.6;
+      opacity: 0.3;
       pointer-events: none;
+      filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
     }
+
     #bottom-watermark {
       position: fixed;
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
+      opacity: 0.4;
+      font-size: 10px;
+      color: #0f0;
+      letter-spacing: 2px;
+    }
+
+    .access-text {
+      font-size: 11px;
       opacity: 0.6;
-      font-size: 12px;
-      color: #94a3b8;
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
   <img id="top-watermark" src="watermark.png" alt="Saints Logo" />
-  <div id="bottom-watermark">Made by Dante Alberts</div>
+  <div id="bottom-watermark">[ SYSTEM ARCHITECT: DANTE_ALBERTS ]</div>
 
-  <div class="card w-full max-w-md p-8">
-    <h1 class="text-2xl font-bold text-center text-blue-400 mb-6">Saints Secure Access</h1>
-
-    <div class="space-y-3">
-      <div>
-        <label class="block text-sm text-gray-300 mb-1">Username</label>
-        <input id="username" class="w-full px-3 py-2 rounded-md bg-slate-900 border border-slate-700 text-sm" />
+  <div class="terminal-box">
+    <div class="terminal-header">
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot" style="animation-delay: 0.3s;"></div>
+      <div class="terminal-dot" style="animation-delay: 0.6s;"></div>
+      <div style="flex: 1; text-align: center;">
+        <span class="glitch" style="font-weight: bold; font-size: 18px;">THE_SAINTS_NETWORK</span>
       </div>
-      <div>
-        <label class="block text-sm text-gray-300 mb-1">Password</label>
-        <input id="password" type="password" class="w-full px-3 py-2 rounded-md bg-slate-900 border border-slate-700 text-sm" />
-      </div>
+    </div>
 
-      <button id="login-btn"
-        class="w-full mt-2 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm">
-        Login
-      </button>
+    <div style="margin-bottom: 20px; text-align: center;">
+      <div style="font-size: 11px; opacity: 0.7;">:: SECURE AUTHENTICATION REQUIRED ::</div>
+      <div class="access-text">UNAUTHORIZED ACCESS IS MONITORED</div>
+    </div>
 
-      <div class="flex justify-between items-center mt-3 text-xs text-gray-400">
-        <a href="register.html" class="hover:text-gray-200 underline">Register</a>
-        <a href="forgot-password.html" class="hover:text-gray-200 underline">Forgot password?</a>
-      </div>
+    <div class="field-group">
+      <label>> IDENTIFIER</label>
+      <input id="username" placeholder="enter_username" autocomplete="off" />
+    </div>
+
+    <div class="field-group">
+      <label>> PASSKEY</label>
+      <input id="password" type="password" placeholder="••••••••" autocomplete="off" />
+    </div>
+
+    <button id="login-btn">
+      [ AUTHENTICATE ]
+    </button>
+
+    <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 11px;">
+      <a href="register.html" class="link">> NEW_USER.EXE</a>
+      <a href="forgot-password.html" class="link">> RESET_ACCESS.SYS</a>
+    </div>
+
+    <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(0, 255, 0, 0.2); font-size: 10px; opacity: 0.5; text-align: center;">
+      <span class="blink">█</span> CONNECTED TO ENCRYPTED NODE
     </div>
   </div>
 
@@ -85,12 +325,19 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Add enter key support
+    document.getElementById("password").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("login-btn").click();
+      }
+    });
+
     document.getElementById("login-btn").onclick = async () => {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
 
       if (!username || !password) {
-        alert("Enter username and password.");
+        alert("⚠ ACCESS DENIED: INCOMPLETE CREDENTIALS");
         return;
       }
 
@@ -98,14 +345,14 @@
       const snap = await getDoc(ref);
 
       if (!snap.exists()) {
-        alert("Invalid username or password.");
+        alert("⚠ ACCESS DENIED: INVALID CREDENTIALS");
         return;
       }
 
       const data = snap.data();
 
       if (data.password !== password) {
-        alert("Invalid username or password.");
+        alert("⚠ ACCESS DENIED: INVALID CREDENTIALS");
         return;
       }
 
