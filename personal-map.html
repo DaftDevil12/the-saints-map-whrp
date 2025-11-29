@@ -314,8 +314,11 @@
       window.location.href = "login.html";
     }
 
+    // IMPORTANT: Each user has their OWN personal map document
     const mapId = "personal-" + user.username;
     const mapDocRef = doc(db, "personalMaps", mapId);
+    
+    console.log('🗺️ Personal Map ID:', mapId); // Debug log
 
     // AUTH / ROLE GUARD
     async function ensureAccess() {
@@ -439,15 +442,25 @@
     }
 
     async function initializeStorage() {
+      // Load initial data for THIS user's map only
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
-        applyRemoteData(existing.data());
+        const data = existing.data();
+        // IMPORTANT: Only apply if it's actually this user's map
+        if (data.username === user.username || !data.username) {
+          applyRemoteData(data);
+        }
       }
 
+      // Live updates - ONLY for THIS user's personal map document
       onSnapshot(mapDocRef, (snapshot) => {
         if (!snapshot.exists()) return;
         const data = snapshot.data();
-        applyRemoteData(data);
+        
+        // CRITICAL: Only apply changes if they belong to THIS user
+        if (data.username === user.username || !data.username) {
+          applyRemoteData(data);
+        }
       });
     }
 
