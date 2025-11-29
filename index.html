@@ -274,6 +274,128 @@
       box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
     }
 
+    .colorblind-btn {
+      position: fixed;
+      top: 20px;
+      right: 160px;
+      background: transparent;
+      border: 2px solid #0f0;
+      color: #0f0;
+      padding: 8px 12px;
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 16px;
+      z-index: 10;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .colorblind-btn:hover {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+    }
+
+    /* Color blind mode styles */
+    body.colorblind-mode {
+      color: #00d4ff;
+    }
+
+    body.colorblind-mode::before {
+      background-image: 
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    }
+
+    body.colorblind-mode::after {
+      background: linear-gradient(
+        transparent 50%,
+        rgba(0, 212, 255, 0.02) 50%
+      );
+    }
+
+    body.colorblind-mode .glitch {
+      text-shadow: 
+        0.05em 0 0 rgba(255, 165, 0, 0.75),
+        -0.025em -0.05em 0 rgba(0, 212, 255, 0.75),
+        0.025em 0.05em 0 rgba(255, 100, 255, 0.75);
+    }
+
+    body.colorblind-mode .header {
+      border-bottom: 2px solid #00d4ff;
+    }
+
+    body.colorblind-mode .header::before {
+      background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+      box-shadow: 0 0 10px #00d4ff;
+    }
+
+    body.colorblind-mode .terminal-dot {
+      background: #00d4ff;
+      box-shadow: 0 0 5px #00d4ff;
+    }
+
+    body.colorblind-mode .module {
+      background: rgba(0, 20, 40, 0.8);
+      border: 2px solid #00d4ff;
+    }
+
+    body.colorblind-mode .module::before {
+      background: linear-gradient(45deg, transparent, #00d4ff, transparent);
+    }
+
+    body.colorblind-mode .module:hover {
+      box-shadow: 
+        0 0 20px rgba(0, 212, 255, 0.5),
+        inset 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+
+    body.colorblind-mode .module-icon {
+      text-shadow: 0 0 10px #00d4ff;
+    }
+
+    body.colorblind-mode .module-status {
+      border: 1px solid #00d4ff;
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    body.colorblind-mode .logout-btn {
+      border: 2px solid #ff6b00;
+      color: #ff6b00;
+    }
+
+    body.colorblind-mode .logout-btn:hover {
+      background: #ff6b00;
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 107, 0, 0.6);
+    }
+
+    body.colorblind-mode .colorblind-btn {
+      border: 2px solid #00d4ff;
+      color: #00d4ff;
+    }
+
+    body.colorblind-mode .colorblind-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+
+    body.colorblind-mode .access-level {
+      color: #ffaa00;
+      text-shadow: 0 0 5px #ffaa00;
+    }
+
+    body.colorblind-mode #top-watermark {
+      filter: brightness(0) saturate(100%) invert(68%) sepia(71%) saturate(2793%) hue-rotate(162deg) brightness(102%) contrast(101%);
+    }
+
+    body.colorblind-mode #bottom-watermark {
+      color: #00d4ff;
+    }
+
     #top-watermark {
       position: fixed;
       top: 20px;
@@ -322,6 +444,11 @@
   </div>
 
   <button class="logout-btn" onclick="logout()">[ DISCONNECT ]</button>
+  
+  <!-- Color Blind Mode Toggle -->
+  <button class="colorblind-btn" onclick="toggleColorBlindMode()">
+    <span id="cb-icon">👁️</span>
+  </button>
 
   <div class="container">
     <div class="header">
@@ -339,7 +466,7 @@
 
     <div class="module-grid">
       <!-- Personal Map Module -->
-      <div class="module" onclick="location.href='personal-map.html'">
+      <div class="module" onclick="location.href='personalmap.html'">
         <span class="module-status">PRIVATE</span>
         <span class="module-icon">🗺️</span>
         <div class="module-title">> Personal Map</div>
@@ -409,18 +536,6 @@
           Mission briefings and updates.
         </div>
       </div>
-
-      <!-- Admin Panel Module (Only visible to admins) -->
-      <div class="module" id="admin-module" onclick="location.href='admin.html'" style="display: none;">
-        <span class="module-status">ADMIN ONLY</span>
-        <span class="module-icon">⚙️</span>
-        <div class="module-title">> Admin Panel</div>
-        <div class="module-desc">
-          System administration and user management.
-          Configure permissions and access levels.
-          Monitor network security.
-        </div>
-      </div>
     </div>
 
     <div style="text-align: center; margin-top: 60px; opacity: 0.4; font-size: 11px;">
@@ -446,6 +561,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Load color blind preference FIRST before anything renders
+    if (localStorage.getItem('colorblindMode') === 'true') {
+      document.body.classList.add('colorblind-mode');
+    }
+
     // Load session user
     const raw = localStorage.getItem("saintsUser");
     if (!raw) {
@@ -462,16 +582,6 @@
       window.location.href = "login.html"; 
     }
 
-    // Check if user is admin and show admin module
-    const userRef = doc(db, "users", user.username);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      if (userData.role === "admin") {
-        document.getElementById("admin-module").style.display = "block";
-      }
-    }
-
     // Count active users (simulate)
     const usersQuery = query(collection(db, "users"));
     onSnapshot(usersQuery, (snapshot) => {
@@ -481,6 +591,13 @@
     window.logout = function() {
       localStorage.removeItem("saintsUser");
       window.location.href = "login.html";
+    };
+
+    // Color blind mode toggle
+    window.toggleColorBlindMode = function() {
+      document.body.classList.toggle('colorblind-mode');
+      const isColorBlind = document.body.classList.contains('colorblind-mode');
+      localStorage.setItem('colorblindMode', isColorBlind);
     };
   </script>
 </body>
