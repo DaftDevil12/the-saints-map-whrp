@@ -54,21 +54,10 @@
     }
     
     .tool-btn {
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 500;
-      background: #374151;
-      color: #f3f4f6;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
+      @apply px-3 py-2 rounded-md text-sm font-medium bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all;
     }
-    .tool-btn:hover { background: #4b5563; }
     .tool-btn.active {
-      background: #3b82f6;
-      color: white;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+      @apply bg-blue-600 text-white ring-2 ring-blue-400;
     }
     
     .category-item {
@@ -84,96 +73,110 @@
     .category-item.active { background: #3b82f6; }
     
     .shape-btn {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      background: #374151;
-      color: #f3f4f6;
-      cursor: pointer;
-      transition: all 0.2s;
+      @apply w-10 h-10 flex items-center justify-center rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition-all cursor-pointer;
     }
-    .shape-btn:hover { background: #4b5563; }
     .shape-btn.active {
-      background: #8b5cf6;
-      color: white;
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+      @apply bg-purple-600 text-white ring-2 ring-purple-400;
     }
     
     .color-swatch {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.2s;
+      @apply w-8 h-8 rounded-md cursor-pointer border-2 border-transparent hover:scale-110 transition-transform;
     }
-    .color-swatch:hover { transform: scale(1.1); }
     .color-swatch.active {
-      border-color: white;
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+      @apply border-white ring-2 ring-white;
     }
     
     .leaflet-container { background: #1a1a1a; }
+
+    #watermark {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      width: 140px;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 9999;
+    }
 
     .top-banner {
       position: absolute;
       top: 15px;
       left: 20px;
       z-index: 1002;
-      background: rgba(15,23,42,0.95);
+      background: rgba(15,23,42,0.9);
       color: #e5e7eb;
-      padding: 10px 16px;
+      padding: 8px 12px;
       border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 12px;
       border: 1px solid rgba(59,130,246,0.5);
       box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
 
-    .admin-badge {
-      display: inline-block;
-      background: #ef4444;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      margin-left: 8px;
-    }
-
-    .view-only-notice {
+    #save-indicator {
       position: absolute;
       top: 15px;
       right: 380px;
       z-index: 1002;
-      background: rgba(245, 158, 11, 0.95);
+      background: rgba(16,185,129,0.9);
       color: white;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 600;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    #save-indicator.saving {
+      background: rgba(59,130,246,0.9);
+      opacity: 1;
+    }
+
+    #save-indicator.saved {
+      background: rgba(16,185,129,0.9);
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-  <!-- Top banner -->
+  <!-- Shared map watermark -->
+  <img id="watermark" src="watermark.png" alt="Watermark">
+
+  <!-- Top banner (role label) -->
   <div id="top-banner" class="top-banner">
-    Personal Map
+    Shared Map (Trusted+)
   </div>
 
-  <!-- View-only notice (for admins viewing other maps) -->
-  <div id="view-only-notice" class="view-only-notice" style="display: none;">
-    🔒 View Only - Admin Mode
+  <!-- Save indicator -->
+  <div id="save-indicator">
+    💾 Saving...
   </div>
+  <a href="index.html"
+     id="dashboard-btn"
+     style="
+        position: absolute;
+        top: 15px;
+        left: 160px;
+        z-index: 1003;
+        background: rgba(15,23,42,0.9);
+        color: #e5e7eb;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        border: 1px solid rgba(59,130,246,0.5);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        cursor: pointer;
+        text-decoration: none;
+     ">
+     ⬅ Dashboard
+  </a>
   
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
     <div class="p-4 border-b border-gray-700">
-      <h1 class="text-xl font-bold">Personal Map</h1>
-      <p class="text-sm text-gray-400 mt-1" id="sidebar-description">Your private map.</p>
+      <h1 class="text-xl font-bold">The Saints - Shared Map</h1>
+      <p class="text-sm text-gray-400 mt-1">Information shared by trusted members.</p>
     </div>
     
     <div id="categories">
@@ -197,8 +200,8 @@
   </div>
 
   <!-- Drawing Toolbar -->
-  <div class="toolbar" id="drawing-toolbar">
-    <h3 class="text-lg font-bold mb-3">Drawing Tools</h3>
+  <div class="toolbar">
+    <h3 class="text-lg font-bold mb-3">Shared Drawing Tools</h3>
     
     <div class="flex flex-col gap-3">
       <!-- Tool Selection -->
@@ -248,8 +251,11 @@
       
       <!-- Actions -->
       <div class="flex gap-2 pt-2 border-t border-gray-300">
+        <button id="share-btn" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium">
+          🔗 Share
+        </button>
         <button id="clear-all" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium">
-          🗑️ Clear All
+          🗑️ Clear
         </button>
       </div>
     </div>
@@ -258,7 +264,7 @@
   <!-- Map Container -->
   <div id="map"></div>
 
-  <!-- MAIN SCRIPT WITH FIREBASE -->
+  <!-- MAIN SCRIPT WITH FIREBASE (MODULE) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { 
@@ -295,30 +301,40 @@
     let shapeFeatures = [];
     let textMarkers = [];
     let isApplyingRemote = false;
-    let isViewOnly = false;
-    let currentUser = null;
-    let targetUsername = null;
-
-    // Get URL parameters to check if viewing someone else's map
-    const urlParams = new URLSearchParams(window.location.search);
-    const viewUser = urlParams.get('user');
 
     // Get logged in user
     const rawUser = localStorage.getItem("saintsUser");
-    if (!rawUser) {
-      window.location.href = "login.html";
-    }
+    if (!rawUser) window.location.href = "login.html";
 
+    let user;
     try {
-      currentUser = JSON.parse(rawUser);
+      user = JSON.parse(rawUser);
     } catch {
       localStorage.removeItem("saintsUser");
       window.location.href = "login.html";
     }
 
-    // Determine which map to load
+    const mapId = "personal-" + user.username;
+    const mapDocRef = doc(db, "personalMaps", mapId);
+
+    // AUTH / ROLE GUARD
     async function ensureAccess() {
-      const userRef = doc(db, "users", currentUser.username);
+      const raw = localStorage.getItem("saintsUser");
+      if (!raw) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      let sessionUser;
+      try {
+        sessionUser = JSON.parse(raw);
+      } catch (e) {
+        localStorage.removeItem("saintsUser");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", sessionUser.username);
       const snap = await getDoc(userRef);
 
       if (!snap.exists()) {
@@ -327,37 +343,14 @@
         return;
       }
 
-      const userData = snap.data();
-      if (!userData.approved) {
+      const data = snap.data();
+      if (!data.approved) {
         window.location.href = "awaiting-approval.html";
         return;
       }
 
-      const isAdmin = userData.role === "admin";
-
-      // If viewing someone else's map
-      if (viewUser && viewUser !== currentUser.username) {
-        if (!isAdmin) {
-          alert("You don't have permission to view this map.");
-          window.location.href = "index.html";
-          return;
-        }
-        
-        // Admin viewing another user's map
-        targetUsername = viewUser;
-        isViewOnly = true;
-        document.getElementById('view-only-notice').style.display = 'block';
-        document.getElementById('drawing-toolbar').style.display = 'none';
-        document.getElementById('top-banner').innerHTML = `
-          Personal Map - ${viewUser} <span class="admin-badge">ADMIN VIEW</span>
-        `;
-        document.getElementById('sidebar-description').textContent = `Viewing ${viewUser}'s private map (admin mode).`;
-      } else {
-        // Viewing own map
-        targetUsername = currentUser.username;
-        isViewOnly = false;
-        document.getElementById('top-banner').textContent = `Personal Map - ${currentUser.username}`;
-      }
+      const banner = document.getElementById("top-banner");
+      banner.textContent = `Personal Map - ${sessionUser.username}`;
 
       initMap();
       setupMapInteractions();
@@ -446,29 +439,25 @@
     }
 
     async function initializeStorage() {
-      const mapId = "personal-" + targetUsername;
-      const mapDocRef = doc(db, "personalMaps", mapId);
-
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
         applyRemoteData(existing.data());
       }
 
-      // Only listen for updates if not in view-only mode
-      if (!isViewOnly) {
-        onSnapshot(mapDocRef, (snapshot) => {
-          if (!snapshot.exists()) return;
-          const data = snapshot.data();
-          applyRemoteData(data);
-        });
-      }
+      onSnapshot(mapDocRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+        const data = snapshot.data();
+        applyRemoteData(data);
+      });
     }
 
     async function saveState() {
-      if (isViewOnly || isApplyingRemote) return;
+      if (!mapDocRef || isApplyingRemote) return;
 
-      const mapId = "personal-" + targetUsername;
-      const mapDocRef = doc(db, "personalMaps", mapId);
+      // Show saving indicator
+      const indicator = document.getElementById('save-indicator');
+      indicator.textContent = '💾 Saving...';
+      indicator.className = 'saving';
 
       const safeLines = lineFeatures.map(line => ({
         ...line,
@@ -491,19 +480,34 @@
           lng: t.lng,
           text: t.text,
           color: t.color
-        }))
+        })),
+        username: user.username, // Add username for Firestore rules
+        lastUpdated: new Date().toISOString()
       };
 
       try {
         await setDoc(mapDocRef, data);
+        console.log('✅ Saved to Firebase:', data);
+        
+        // Show saved indicator
+        indicator.textContent = '✅ Saved';
+        indicator.className = 'saved';
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+          indicator.style.opacity = '0';
+        }, 2000);
       } catch (e) {
-        console.error('Save failed:', e);
+        console.error('❌ Save failed:', e);
+        indicator.textContent = '❌ Save failed';
+        indicator.style.background = 'rgba(239,68,68,0.9)';
+        setTimeout(() => {
+          indicator.style.opacity = '0';
+        }, 3000);
       }
     }
 
     function setActiveTool(tool) {
-      if (isViewOnly) return;
-      
       currentTool = tool;
       currentShape = null;
       polygonPoints = [];
@@ -522,8 +526,6 @@
     }
 
     function setActiveShape(shape) {
-      if (isViewOnly) return;
-      
       currentShape = shape;
       currentTool = 'shape';
       polygonPoints = [];
@@ -538,46 +540,48 @@
       if (map) map.dragging.disable();
     }
 
-    if (!isViewOnly) {
-      document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
-      document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
-      document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
-      document.getElementById('shape-rectangle').addEventListener('click', () => setActiveShape('rectangle'));
-      document.getElementById('shape-circle').addEventListener('click', () => setActiveShape('circle'));
-      document.getElementById('shape-polygon').addEventListener('click', () => setActiveShape('polygon'));
+    document.getElementById('tool-pan').addEventListener('click', () => setActiveTool('pan'));
+    document.getElementById('tool-draw').addEventListener('click', () => setActiveTool('draw'));
+    document.getElementById('tool-text').addEventListener('click', () => setActiveTool('text'));
+    document.getElementById('shape-rectangle').addEventListener('click', () => setActiveShape('rectangle'));
+    document.getElementById('shape-circle').addEventListener('click', () => setActiveShape('circle'));
+    document.getElementById('shape-polygon').addEventListener('click', () => setActiveShape('polygon'));
 
-      document.querySelectorAll('.color-swatch').forEach(swatch => {
-        swatch.addEventListener('click', () => {
-          document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-          swatch.classList.add('active');
-          currentColor = swatch.dataset.color;
-          document.getElementById('custom-color').value = currentColor;
-        });
-      });
-
-      document.getElementById('custom-color').addEventListener('input', (e) => {
-        currentColor = e.target.value;
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => {
         document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        currentColor = swatch.dataset.color;
+        document.getElementById('custom-color').value = currentColor;
       });
+    });
 
-      document.getElementById('clear-all').addEventListener('click', async () => {
-        if (!confirm('Clear all drawings on your personal map?')) return;
-        lineFeatures = [];
-        shapeFeatures = [];
-        redrawLines();
-        redrawShapes();
-        textMarkers.forEach(t => t.markerInstance.remove());
-        textMarkers = [];
-        await saveState();
-      });
-    }
+    document.getElementById('custom-color').addEventListener('input', (e) => {
+      currentColor = e.target.value;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    });
+
+    document.getElementById('clear-all').addEventListener('click', async () => {
+      if (!confirm('Clear all drawings on the shared map for everyone?')) return;
+      lineFeatures = [];
+      shapeFeatures = [];
+      redrawLines();
+      redrawShapes();
+      textMarkers.forEach(t => t.markerInstance.remove());
+      textMarkers = [];
+      await saveState();
+    });
+
+    document.getElementById('share-btn').addEventListener('click', () => {
+      const url = window.location.origin + window.location.pathname;
+      navigator.clipboard.writeText(url);
+      alert('Shared map link copied to clipboard!');
+    });
 
     function setupMapInteractions() {
       let tempShapeStart = null;
 
       map.on('mousedown', (e) => {
-        if (isViewOnly) return;
-        
         if (currentTool === 'draw') {
           isDrawing = true;
           currentLineCoords = [{ lat: e.latlng.lat, lng: e.latlng.lng }];
@@ -587,8 +591,6 @@
       });
 
       map.on('mousemove', (e) => {
-        if (isViewOnly) return;
-        
         if (isDrawing && currentTool === 'draw') {
           currentLineCoords.push({ lat: e.latlng.lat, lng: e.latlng.lng });
           redrawLines(true);
@@ -596,8 +598,6 @@
       });
 
       map.on('mouseup', async (e) => {
-        if (isViewOnly) return;
-        
         if (isDrawing && currentTool === 'draw') {
           isDrawing = false;
           if (currentLineCoords.length > 1) {
@@ -638,8 +638,6 @@
       });
 
       map.on('click', async (e) => {
-        if (isViewOnly) return;
-        
         if (currentTool === 'text') {
           const text = document.getElementById('text-input').value || 'Location';
           createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
@@ -684,15 +682,13 @@
           isDrawnLine: true
         }).addTo(map);
 
-        if (!isViewOnly) {
-          layer.on('click', async () => {
-            if (confirm('Delete this line?')) {
-              lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
-              redrawLines();
-              await saveState();
-            }
-          });
-        }
+        layer.on('click', async () => {
+          if (confirm('Delete this line from the shared map for everyone?')) {
+            lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
+            redrawLines();
+            await saveState();
+          }
+        });
       });
 
       if (includeTemp && currentLineCoords.length > 0) {
@@ -753,15 +749,13 @@
         
         if (layer) {
           layer.addTo(map);
-          if (!isViewOnly) {
-            layer.on('click', async () => {
-              if (confirm('Delete this shape?')) {
-                shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
-                redrawShapes();
-                await saveState();
-              }
-            });
-          }
+          layer.on('click', async () => {
+            if (confirm('Delete this shape from the shared map for everyone?')) {
+              shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
+              redrawShapes();
+              await saveState();
+            }
+          });
         }
       });
     }
@@ -779,7 +773,7 @@
         font-size: 13px;
         font-weight: 600;
         box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        cursor: ${isViewOnly ? 'default' : 'pointer'};
+        cursor: pointer;
         white-space: nowrap;
       `;
       el.textContent = text;
@@ -791,35 +785,33 @@
           iconSize: null,
           iconAnchor: [0, 0]
         }),
-        draggable: !isViewOnly
+        draggable: true
       }).addTo(map);
 
       const markerObj = { id, lat, lng, text, color, markerInstance: marker };
 
-      if (!isViewOnly) {
-        marker.on('dragend', async () => {
-          const pos = marker.getLatLng();
-          markerObj.lat = pos.lat;
-          markerObj.lng = pos.lng;
-          await saveState();
-        });
+      marker.on('dragend', async () => {
+        const pos = marker.getLatLng();
+        markerObj.lat = pos.lat;
+        markerObj.lng = pos.lng;
+        await saveState();
+      });
 
-        marker.on('click', async () => {
-          const action = prompt('Edit text (or type DELETE to remove):', markerObj.text);
-          if (action === null) return;
-          if (action.toUpperCase() === 'DELETE') {
-            marker.remove();
-            textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-            await saveState();
-          } else if (action.trim()) {
-            markerObj.text = action.trim();
-            marker.remove();
-            textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
-            createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
-            await saveState();
-          }
-        });
-      }
+      marker.on('click', async () => {
+        const action = prompt('Edit text (or type DELETE to remove for everyone):', markerObj.text);
+        if (action === null) return;
+        if (action.toUpperCase() === 'DELETE') {
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          await saveState();
+        } else if (action.trim()) {
+          markerObj.text = action.trim();
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
+          await saveState();
+        }
+      });
 
       textMarkers.push(markerObj);
       return markerObj;
