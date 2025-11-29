@@ -827,4 +827,267 @@
     });
 
     document.getElementById('share-btn').addEventListener('click', () => {
-      const url = window.location.origin + window.location.
+      const url = window.location.origin + window.location.pathname;
+      navigator.clipboard.writeText(url);
+      alert('MAP LINK COPIED TO CLIPBOARD');
+    });
+
+    function setupMapInteractions() {
+      let tempShapeStart = null;
+
+      map.on('mousedown', (e) => {
+        if (currentTool === 'draw') {
+          isDrawing = true;
+          currentLineCoords = [{ lat: e.latlng.lat, lng: e.latlng.lng }];
+        } else if (currentTool === 'shape' && (currentShape === 'rectangle' || currentShape === 'circle')) {
+          tempShapeStart = e.latlng;
+        }
+      });
+
+      map.on('mousemove', (e) => {
+        if (isDrawing && currentTool === 'draw') {
+          currentLineCoords.push({ lat: e.latlng.lat, lng: e.latlng.lng });
+          redrawLines(true);
+        }
+      });
+
+      map.on('mouseup', async (e) => {
+        if (isDrawing && currentTool === 'draw') {
+          isDrawing = false;
+          if (currentLineCoords.length > 1) {
+            lineFeatures.push({
+              id: 'line-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+              coordinates: currentLineCoords,
+              color: currentColor
+            });
+            redrawLines();
+            await saveState();
+          }
+          currentLineCoords = [];
+        } else if (tempShapeStart && currentTool === 'shape') {
+          if (currentShape === 'rectangle') {
+            shapeFeatures.push({
+              id: 'rect-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+              type: 'rectangle',
+              bounds: [
+                { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
+                { lat: e.latlng.lat, lng: e.latlng.lng }
+              ],
+              color: currentColor
+            });
+          } else if (currentShape === 'circle') {
+            const radius = map.distance(tempShapeStart, e.latlng);
+            shapeFeatures.push({
+              id: 'circle-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+              type: 'circle',
+              center: { lat: tempShapeStart.lat, lng: tempShapeStart.lng },
+              radius: radius,
+              color: currentColor
+            });
+          }
+          redrawShapes();
+          await saveState();
+          tempShapeStart = null;
+        }
+      });
+
+      map.on('click', async (e) => {
+        if (currentTool === 'text') {
+          const text = document.getElementById('text-input').value || 'Location';
+          createTextMarker(e.latlng.lat, e.latlng.lng, text, currentColor);
+          await saveState();
+        } else if (currentTool === 'shape' && currentShape === 'polygon') {
+          polygonPoints.push({ lat: e.latlng.lat, lng: e.latlng.lng });
+          if (polygonPoints.length >= 3) {
+            setTimeout(async () => {
+              if (confirm('COMPLETE POLYGON?')) {
+                shapeFeatures.push({
+                  id: 'poly-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+                  type: 'polygon',
+                  coordinates: polygonPoints,
+                  color: currentColor
+                });
+                redrawShapes();
+                await saveState();
+                polygonPoints = [];
+              }
+            }, 100);
+          }
+        }
+      });
+    }
+
+    function redrawLines(includeTemp = false) {
+      if (!map) return;
+
+      map.eachLayer(layer => {
+        if (layer.options && layer.options.isDrawnLine) {
+          map.removeLayer(layer);
+        }
+      });
+
+      lineFeatures.forEach(feature => {
+        if (!Array.isArray(feature.coordinates)) return;
+        const latlngs = feature.coordinates.map(p => [p.lat, p.lng]);
+        const layer = L.polyline(latlngs, {
+          color: feature.color,
+          weight: 3,
+          opacity: 0.9,
+          isDrawnLine: true
+        }).addTo(map);
+
+        layer.on('click', async () => {
+          if (confirm('DELETE THIS LINE?\n\nTHIS ACTION CANNOT BE UNDONE.')) {
+            lineFeatures = lineFeatures.filter(f => f.id !== feature.id);
+            redrawLines();
+            await saveState();
+          }
+        });
+      });
+
+      if (includeTemp && currentLineCoords.length > 0) {
+        const tempLatLngs = currentLineCoords.map(p => [p.lat, p.lng]);
+        L.polyline(tempLatLngs, {
+          color: currentColor,
+          weight: 3,
+          opacity: 0.6,
+          isDrawnLine: true
+        }).addTo(map);
+      }
+    }
+
+    function redrawShapes() {
+      if (!map) return;
+
+      map.eachLayer(layer => {
+        if (layer.options && layer.options.isDrawnShape) {
+          map.removeLayer(layer);
+        }
+      });
+
+      shapeFeatures.forEach(feature => {
+        let layer;
+        if (feature.type === 'rectangle' && Array.isArray(feature.bounds) && feature.bounds.length === 2) {
+          const b = feature.bounds;
+          const bounds = [
+            [b[0].lat, b[0].lng],
+            [b[1].lat, b[1].lng]
+          ];
+          layer = L.rectangle(bounds, {
+            color: feature.color,
+            fillColor: feature.color,
+            fillOpacity: 0.3,
+            weight: 2,
+            isDrawnShape: true
+          });
+        } else if (feature.type === 'circle' && feature.center) {
+          const center = [feature.center.lat, feature.center.lng];
+          layer = L.circle(center, {
+            radius: feature.radius,
+            color: feature.color,
+            fillColor: feature.color,
+            fillOpacity: 0.3,
+            weight: 2,
+            isDrawnShape: true
+          });
+        } else if (feature.type === 'polygon' && Array.isArray(feature.coordinates)) {
+          const coords = feature.coordinates.map(p => [p.lat, p.lng]);
+          layer = L.polygon(coords, {
+            color: feature.color,
+            fillColor: feature.color,
+            fillOpacity: 0.3,
+            weight: 2,
+            isDrawnShape: true
+          });
+        }
+        
+        if (layer) {
+          layer.addTo(map);
+          layer.on('click', async () => {
+            if (confirm('DELETE THIS SHAPE?\n\nTHIS ACTION CANNOT BE UNDONE.')) {
+              shapeFeatures = shapeFeatures.filter(f => f.id !== feature.id);
+              redrawShapes();
+              await saveState();
+            }
+          });
+        }
+      });
+    }
+
+    function createTextMarker(lat, lng, text, color, idOptional) {
+      const id = idOptional || 'label-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+
+      const el = document.createElement('div');
+      el.style.cssText = `
+        padding: 6px 12px;
+        background: ${color};
+        color: #000;
+        border: 2px solid ${color};
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'Courier Prime', monospace;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 0 10px ${color};
+        cursor: pointer;
+        white-space: nowrap;
+      `;
+      el.textContent = text;
+
+      const marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: '',
+          html: el.outerHTML,
+          iconSize: null,
+          iconAnchor: [0, 0]
+        }),
+        draggable: true
+      }).addTo(map);
+
+      const markerObj = { id, lat, lng, text, color, markerInstance: marker };
+
+      marker.on('dragend', async () => {
+        const pos = marker.getLatLng();
+        markerObj.lat = pos.lat;
+        markerObj.lng = pos.lng;
+        await saveState();
+      });
+
+      marker.on('click', async () => {
+        const action = prompt('EDIT TEXT (TYPE "DELETE" TO REMOVE):', markerObj.text);
+        if (action === null) return;
+        if (action.toUpperCase() === 'DELETE') {
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          await saveState();
+        } else if (action.trim()) {
+          markerObj.text = action.trim();
+          marker.remove();
+          textMarkers = textMarkers.filter(t => t.id !== markerObj.id);
+          createTextMarker(markerObj.lat, markerObj.lng, markerObj.text, markerObj.color, markerObj.id);
+          await saveState();
+        }
+      });
+
+      textMarkers.push(markerObj);
+      return markerObj;
+    }
+
+    window.toggleSidebar = function () {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    };
+
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        alert('CATEGORY MARKERS: ' + item.dataset.category);
+      });
+    });
+
+    // Initialize everything
+    ensureAccess();
+  </script>
+</body>
+</html>
