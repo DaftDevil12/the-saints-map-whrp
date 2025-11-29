@@ -341,12 +341,12 @@
       map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -2,
-        maxZoom: 8,
-        maxNativeZoom: 4,
+        maxZoom: 5,
+        maxNativeZoom: 5,
         center: [0, 0],
         zoom: 0,
         zoomSnap: 0.25,
-        zoomDelta: 0.5
+        zoomDelta: 1
       });
 
       const bounds = [[-256, -256], [256, 256]];
@@ -354,8 +354,8 @@
       // Satellite Map
       L.tileLayer('https://dukeofsussex.dev/projects/gta-v-map/maps/satellite/{z}/{x}/{y}.webp', {
         minZoom: -2,
-        maxZoom: 4,
-        maxNativeZoom: 4,
+        maxZoom: 5,
+        maxNativeZoom: 5,
         noWrap: true,
         tileSize: 256,
         bounds: bounds,
