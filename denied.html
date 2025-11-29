@@ -239,7 +239,8 @@
   <div class="warning-strip"></div>
   <div class="warning-strip bottom"></div>
 
-  <img id="bouncing-img" class="bouncing-image" src="new-denied.png" alt="Access Denied">
+  <!-- Bouncing PNG Image - REPLACE "your-image.png" with your image path -->
+  <img id="bouncing-img" class="bouncing-image" src="your-image.png" alt="Access Denied">
 
   <div class="container">
     <div class="alert-icon">⚠️</div>
@@ -258,11 +259,14 @@
     <button class="back-btn" onclick="goBack()">← RETURN TO LOGIN</button>
   </div>
 
-  <!-- Audio element for "magic word" sound -->
-  <audio id="deny-sound" preload="auto" loop>
-    <source src="magic-word.mp3" type="audio/mpeg">
-    <source src="magic-word.ogg" type="audio/ogg">
-  </audio>
+  <!-- YouTube embedded audio (hidden) -->
+  <iframe id="deny-sound" 
+          width="0" 
+          height="0" 
+          src="" 
+          allow="autoplay" 
+          style="display: none;">
+  </iframe>
 
   <script>
     // Set timestamp
@@ -308,17 +312,16 @@
     // Start animation
     animate();
 
-    // Play sound on load with user interaction fallback
-    const sound = document.getElementById('deny-sound');
-    sound.volume = 0.5; // Set to 50% volume
+    // YouTube video ID for the sound - REPLACE WITH YOUR VIDEO ID
+    // To get the video ID: from https://www.youtube.com/watch?v=VIDEO_ID
+    // Just copy the VIDEO_ID part after "watch?v="
+    const youtubeVideoId = "g_vZasFzMN4"; // Example: Jurassic Park "Ah ah ah" sound
     
-    // Try to play immediately
-    sound.play().catch(() => {
-      // If autoplay is blocked, play on first click
-      document.addEventListener('click', () => {
-        sound.play();
-      }, { once: true });
-    });
+    // Build YouTube embed URL with autoplay and loop
+    const youtubeEmbed = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&loop=1&playlist=${youtubeVideoId}&controls=0`;
+    
+    // Set the iframe source to start playing
+    document.getElementById('deny-sound').src = youtubeEmbed;
 
     // Repeat "YOU DIDN'T SAY THE MAGIC WORD!" in console (Easter egg)
     for (let i = 0; i < 10; i++) {
