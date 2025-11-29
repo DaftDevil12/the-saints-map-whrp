@@ -314,11 +314,28 @@
       window.location.href = "login.html";
     }
 
+    // Check if viewing someone else's map (for admins)
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewingUsername = urlParams.get('user'); // e.g., ?user=john123
+    
+    // Determine which map to load
+    let targetUsername = user.username; // Default to own map
+    let isViewingOthersMap = false;
+    
+    if (viewingUsername && user.username === "Dante-Alberts") {
+      // Admin viewing another user's map
+      targetUsername = viewingUsername;
+      isViewingOthersMap = true;
+    }
+
     // IMPORTANT: Each user has their OWN personal map document
-    const mapId = "personal-" + user.username;
+    const mapId = "personal-" + targetUsername;
     const mapDocRef = doc(db, "personalMaps", mapId);
     
-    console.log('🗺️ Personal Map ID:', mapId); // Debug log
+    console.log('🗺️ Personal Map ID:', mapId);
+    console.log('👤 Viewing as:', user.username);
+    console.log('📍 Target user:', targetUsername);
+    console.log('👁️ Viewing others map:', isViewingOthersMap);
 
     // AUTH / ROLE GUARD
     async function ensureAccess() {
@@ -353,7 +370,12 @@
       }
 
       const banner = document.getElementById("top-banner");
-      banner.textContent = `Personal Map - ${sessionUser.username}`;
+      if (isViewingOthersMap) {
+        banner.textContent = `👁️ Viewing: ${targetUsername}'s Map (Admin Mode)`;
+        banner.style.background = 'rgba(239,68,68,0.9)'; // Red for admin viewing
+      } else {
+        banner.textContent = `Personal Map - ${sessionUser.username}`;
+      }
 
       initMap();
       setupMapInteractions();
@@ -442,23 +464,23 @@
     }
 
     async function initializeStorage() {
-      // Load initial data for THIS user's map only
+      // Load initial data for the TARGET user's map
       const existing = await getDoc(mapDocRef);
       if (existing.exists()) {
         const data = existing.data();
-        // IMPORTANT: Only apply if it's actually this user's map
-        if (data.username === user.username || !data.username) {
+        // Apply data for the map we're viewing (target user's map)
+        if (data.username === targetUsername || !data.username) {
           applyRemoteData(data);
         }
       }
 
-      // Live updates - ONLY for THIS user's personal map document
+      // Live updates - ONLY for the TARGET user's personal map document
       onSnapshot(mapDocRef, (snapshot) => {
         if (!snapshot.exists()) return;
         const data = snapshot.data();
         
-        // CRITICAL: Only apply changes if they belong to THIS user
-        if (data.username === user.username || !data.username) {
+        // Apply changes only if they belong to the TARGET user
+        if (data.username === targetUsername || !data.username) {
           applyRemoteData(data);
         }
       });
@@ -494,8 +516,9 @@
           text: t.text,
           color: t.color
         })),
-        username: user.username, // Add username for Firestore rules
-        lastUpdated: new Date().toISOString()
+        username: targetUsername, // Save to the TARGET user's map
+        lastUpdated: new Date().toISOString(),
+        lastEditedBy: user.username // Track who made the edit
       };
 
       try {
