@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>The Saints – Finances</title>
+<title>The Saints - Finances</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -10,7 +10,8 @@
     background: linear-gradient(to bottom right, #0f172a, #1e293b);
     color: #e2e8f0;
     font-family: 'Inter', sans-serif;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   #top-watermark {
@@ -18,95 +19,94 @@
     top: 20px;
     right: 20px;
     width: 120px;
-    opacity: 0.45;
+    opacity: 0.5;
     pointer-events: none;
   }
 
+  #bottom-watermark {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.6;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
   .card {
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(30, 41, 59, 0.85);
     border: 1px solid rgba(59, 130, 246, 0.4);
     padding: 20px;
     border-radius: 12px;
     backdrop-filter: blur(6px);
-  }
-
-  .input-box {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: #e2e8f0;
-    width: 100%;
-  }
-
-  .btn-blue {
-    background: #3b82f6;
-    padding: 10px 14px;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-  }
-  .btn-blue:hover { background: #2563eb; }
-
-  .btn-red {
-    background: #dc2626;
-    padding: 6px 10px;
-    border-radius: 6px;
-    color: white;
-  }
-  .btn-red:hover { background: #b91c1c; }
-
-  .entry {
-    background: rgba(15,23,42,0.5);
-    border: 1px solid rgba(59,130,246,0.3);
-    border-radius: 8px;
-    padding: 10px;
   }
 </style>
 </head>
 
 <body>
 
-<img id="top-watermark" src="watermark.png" />
+<img id="top-watermark" src="watermark.png">
+<div id="bottom-watermark">Made by Dante Alberts</div>
 
-<div class="p-6 max-w-3xl mx-auto">
+<!-- Dashboard -->
+<a href="index.html"
+   class="absolute top-5 left-5 bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-md text-sm border border-blue-400 shadow-xl">
+⬅ Dashboard
+</a>
 
-  <a href="index.html" class="text-blue-400 underline mb-4 inline-block">⬅ Back to Dashboard</a>
+<div class="flex flex-col items-center pt-20 px-5">
 
-  <h1 class="text-3xl font-bold text-blue-400 mb-6">💰 Saints Finances</h1>
+  <h1 class="text-3xl font-bold text-blue-400 mb-2">💰 Saints Finances</h1>
+  <p class="text-gray-400 mb-6">View and manage financial entries</p>
 
-  <!-- Balance -->
-  <div class="card mb-8">
-    <h2 class="text-xl font-semibold mb-2">Current Total</h2>
-    <div id="total" class="text-3xl font-bold text-green-400">£0</div>
+  <!-- Add Entry (trusted/admin only) -->
+  <div id="add-section" class="card w-full max-w-xl mb-8 hidden">
+    <h2 class="text-xl font-semibold mb-3">Add Entry</h2>
+
+    <div class="flex flex-col gap-3">
+
+      <input id="entry-title"
+             class="px-3 py-2 rounded-md bg-gray-700 border border-gray-600"
+             placeholder="Title (e.g. Ammo Purchase)">
+
+      <input id="entry-amount"
+             class="px-3 py-2 rounded-md bg-gray-700 border border-gray-600"
+             placeholder="Amount (e.g. -500 or +1200)">
+
+      <textarea id="entry-notes"
+                class="px-3 py-2 rounded-md bg-gray-700 border border-gray-600"
+                placeholder="Notes (optional)"
+                rows="3"></textarea>
+
+      <button id="add-entry-btn"
+        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md">
+        ➕ Add Entry
+      </button>
+    </div>
   </div>
 
-  <!-- Add Finance (ADMIN ONLY) -->
-  <div id="admin-controls" class="card mb-8 hidden">
-    <h2 class="text-xl font-semibold mb-3">Add Transaction</h2>
+  <!-- Finance Log -->
+  <div class="card w-full max-w-3xl overflow-y-auto" style="max-height: 60vh;">
+    <h2 class="text-2xl font-semibold mb-4">Finance Log</h2>
 
-    <input id="fin-desc" class="input-box mb-3" placeholder="Description (e.g. Drug Sale, Equipment Purchase)">
-    <input id="fin-amount" type="number" class="input-box mb-3" placeholder="Amount (+ income | - expense)">
-
-    <button id="add-btn" class="btn-blue w-full">Add Entry</button>
+    <div id="finance-list" class="flex flex-col gap-4">
+      <p class="text-gray-500">Loading...</p>
+    </div>
   </div>
-
-  <h2 class="text-xl font-semibold mb-3">Transaction History</h2>
-
-  <div id="finance-list" class="space-y-3"></div>
 
 </div>
 
-<!-- FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import {
-    getFirestore,
-    doc,
+  import { 
+    getFirestore, 
+    collection,
+    addDoc,
+    onSnapshot,
+    query,
+    orderBy,
     getDoc,
-    updateDoc,
-    setDoc,
-    deleteField
+    doc
   } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -122,103 +122,88 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ---------- Role Check ----------
-  async function ensureAccess() {
-    const raw = localStorage.getItem("saintsUser");
-    if (!raw) return window.location.href = "login.html";
+  // Load session user
+  const raw = localStorage.getItem("saintsUser");
+  if (!raw) window.location.href = "login.html";
 
-    let user;
-    try { user = JSON.parse(raw); }
-    catch { return window.location.href = "login.html"; }
+  let user;
+  try { user = JSON.parse(raw); }
+  catch { window.location.href = "login.html"; }
 
-    const userRef = doc(db, "users", user.username);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return window.location.href = "login.html";
+  // Load user role from Firestore
+  async function loadRole() {
+    const snap = await getDoc(doc(db, "users", user.username));
+    if (!snap.exists()) {
+      localStorage.removeItem("saintsUser");
+      window.location.href = "login.html";
+      return;
+    }
 
-    const data = snap.data();
+    const role = snap.data().role || "untrusted";
 
-    if (!data.approved) return window.location.href = "awaiting-approval.html";
-
-    const role = data.role || "untrusted";
-
-    // Admins can add entries
-    if (role === "admin") {
-      document.getElementById("admin-controls").classList.remove("hidden");
+    if (role === "trusted" || role === "admin") {
+      document.getElementById("add-section").classList.remove("hidden");
     }
   }
 
-  await ensureAccess();
+  loadRole();
 
-  // ---------- Finance Document ----------
-  const finRef = doc(db, "finances", "saints");
+  const listEl = document.getElementById("finance-list");
 
-  async function loadFinances() {
-    const list = document.getElementById("finance-list");
-    list.innerHTML = "";
+  // Display finance entries
+  const q = query(collection(db, "finances"), orderBy("timestamp", "desc"));
 
-    const snap = await getDoc(finRef);
-    if (!snap.exists()) return;
+  onSnapshot(q, (snapshot) => {
+    listEl.innerHTML = "";
+    if (snapshot.empty) {
+      listEl.innerHTML = `<p class="text-gray-500">No entries yet.</p>`;
+      return;
+    }
 
-    const data = snap.data();
-    let total = 0;
+    snapshot.forEach(doc => {
+      const f = doc.data();
 
-    for (const [id, entry] of Object.entries(data)) {
-      total += entry.amount;
+      const color = f.amount >= 0 ? "text-green-400" : "text-red-400";
 
-      const row = document.createElement("div");
-      row.className = "entry flex justify-between items-center";
+      const item = document.createElement("div");
+      item.className = "p-4 rounded-md bg-gray-800 border border-gray-700";
 
-      const amountColor = entry.amount >= 0 ? "text-green-400" : "text-red-400";
-
-      row.innerHTML = `
-        <div>
-          <div class="font-bold">${entry.desc}</div>
-          <div class="${amountColor} font-semibold">£${entry.amount}</div>
+      item.innerHTML = `
+        <div class="flex justify-between">
+          <h3 class="text-xl font-bold">${f.title}</h3>
+          <p class="font-bold ${color}">${f.amount}</p>
         </div>
-        <button class="btn-red" data-remove="${id}">Delete</button>
+        <p class="text-gray-400 text-sm mt-1">${f.notes || ""}</p>
+        <p class="text-xs text-gray-500 mt-2">Added by: ${f.author}</p>
       `;
 
-      list.appendChild(row);
+      listEl.appendChild(item);
+    });
+  });
+
+  // Add finance entry
+  document.getElementById("add-entry-btn").onclick = async () => {
+    const title = document.getElementById("entry-title").value.trim();
+    const amount = parseFloat(document.getElementById("entry-amount").value.trim());
+    const notes = document.getElementById("entry-notes").value.trim();
+
+    if (!title || isNaN(amount)) {
+      alert("Please enter a valid title and numeric amount.");
+      return;
     }
 
-    document.getElementById("total").textContent = "£" + total.toLocaleString();
-
-    // Delete handlers (ADMIN ONLY)
-    document.querySelectorAll("[data-remove]").forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm("Delete this transaction?")) return;
-
-        await updateDoc(finRef, {
-          [btn.dataset.remove]: deleteField()
-        });
-
-        loadFinances();
-      };
+    await addDoc(collection(db, "finances"), {
+      title: title,
+      amount: amount,
+      notes: notes,
+      author: user.username,     // 🔥 required for Firestore rules
+      timestamp: Date.now()
     });
-  }
 
-  loadFinances();
-
-  // ---------- Add Entry (Admin Only) ----------
-  document.getElementById("add-btn").onclick = async () => {
-    const desc = document.getElementById("fin-desc").value.trim();
-    const amount = Number(document.getElementById("fin-amount").value);
-
-    if (!desc || isNaN(amount)) return alert("Enter a valid description and amount.");
-
-    const id = "entry-" + Date.now();
-
-    await setDoc(finRef, {
-      [id]: {
-        desc,
-        amount
-      }
-    }, { merge: true });
-
-    document.getElementById("fin-desc").value = "";
-    document.getElementById("fin-amount").value = "";
-
-    loadFinances();
+    // Clear input
+    document.getElementById("entry-title").value = "";
+    document.getElementById("entry-amount").value = "";
+    document.getElementById("entry-notes").value = "";
   };
 </script>
 
