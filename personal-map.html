@@ -501,6 +501,8 @@
       try {
         await setDoc(mapDocRef, data);
         console.log('✅ Saved to Firebase:', data);
+        console.log('📍 Document path:', `personalMaps/${mapId}`);
+        console.log('👤 Username in data:', data.username);
         
         // Show saved indicator
         indicator.textContent = '✅ Saved';
