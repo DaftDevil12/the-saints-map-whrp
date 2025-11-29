@@ -290,67 +290,48 @@ const mapDocRef = doc(db, "personalMaps", mapId);
 
 
     // ---- AUTH / ROLE GUARD ----
-    async function ensureAccess() {
-      const raw = localStorage.getItem("saintsUser");
-      if (!raw) {
-        window.location.href = "login.html";
-        return;
-      }
+async function ensureAccess() {
+  const raw = localStorage.getItem("saintsUser");
+  if (!raw) {
+    window.location.href = "login.html";
+    return;
+  }
 
-      let sessionUser;
-      try {
-        sessionUser = JSON.parse(raw);
-      } catch (e) {
-        localStorage.removeItem("saintsUser");
-        window.location.href = "login.html";
-        return;
-      }
+  let sessionUser;
+  try {
+    sessionUser = JSON.parse(raw);
+  } catch (e) {
+    localStorage.removeItem("saintsUser");
+    window.location.href = "login.html";
+    return;
+  }
 
-      if (!sessionUser.username) {
-        localStorage.removeItem("saintsUser");
-        window.location.href = "login.html";
-        return;
-      }
+  const userRef = doc(db, "users", sessionUser.username);
+  const snap = await getDoc(userRef);
 
-      const userRef = doc(db, "users", sessionUser.username);
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) {
-        localStorage.removeItem("saintsUser");
-        window.location.href = "login.html";
-        return;
-      }
+  if (!snap.exists()) {
+    localStorage.removeItem("saintsUser");
+    window.location.href = "login.html";
+    return;
+  }
 
-      const data = snap.data();
-      if (!data.approved) {
-        window.location.href = "awaiting-approval.html";
-        return;
-      }
+  const data = snap.data();
+  if (!data.approved) {
+    window.location.href = "awaiting-approval.html";
+    return;
+  }
 
-      const role = data.role || "untrusted";
+  // PERSONAL MAP: everyone can access
+  const role = data.role || "untrusted";
 
-      if (role === "untrusted") {
-        // Untrusted users only get personal map
-        window.location.href = "personal-map.html";
-        return;
-      }
+  // Update banner − personal map
+  const banner = document.getElementById("top-banner");
+  banner.textContent = `Personal Map - ${sessionUser.username}`;
 
-      // Trusted or admin can use shared map
-      const banner = document.getElementById("top-banner");
-      if (role === "admin") {
-        banner.textContent = `Shared Map - Admin`;
-      } else {
-        banner.textContent = `Shared Map - Trusted`;
-      }
+  initMap();
+  initializeStorage();
+}
 
-      initMap();
-      initializeStorage();
-    }
-
-    // Ensure access first
-    ensureAccess().catch(err => {
-      console.error(err);
-      window.location.href = "login.html";
-    });
 
 function initMap() {
   map = L.map('map', {
