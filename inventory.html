@@ -464,7 +464,12 @@
       const itemCount = Object.keys(items).length;
       document.getElementById("item-count").textContent = itemCount;
 
-      for (const [item, amount] of Object.entries(items)) {
+      // Sort items alphabetically (case-insensitive)
+      const sortedItems = Object.entries(items).sort((a, b) => 
+        a[0].toLowerCase().localeCompare(b[0].toLowerCase())
+      );
+
+      for (const [item, amount] of sortedItems) {
         const row = document.createElement("div");
         row.className = "inventory-item";
 
