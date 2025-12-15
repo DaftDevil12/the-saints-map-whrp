@@ -222,6 +222,10 @@
       content: '[ INVENTORY DATABASE ]';
     }
 
+    .panel.search-panel::before {
+      content: '[ SEARCH FILTER ]';
+    }
+
     .input-field {
       background: rgba(0, 0, 0, 0.6);
       border: 1px solid #0f0;
@@ -388,6 +392,11 @@
       <button id="add-btn" class="btn">[ REGISTER ASSET ]</button>
     </div>
 
+    <!-- Search Panel -->
+    <div class="panel search-panel">
+      <input id="search-input" class="input-field" placeholder="> SEARCH ASSETS..." style="margin-bottom: 0;" />
+    </div>
+
     <!-- Inventory List Panel -->
     <div class="panel list-panel">
       <div id="inventory-list"></div>
@@ -447,8 +456,9 @@
     await ensureAccess();
 
     const invRef = doc(db, "inventory", "shared");
+    let allItems = {}; // Store all items for filtering
 
-    async function loadInventory() {
+    async function loadInventory(searchTerm = "") {
       const snap = await getDoc(invRef);
       const list = document.getElementById("inventory-list");
 
@@ -460,12 +470,23 @@
         return;
       }
 
-      const items = snap.data();
-      const itemCount = Object.keys(items).length;
+      allItems = snap.data();
+      
+      // Filter items based on search term
+      const filteredItems = Object.entries(allItems).filter(([item, amount]) => 
+        item.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      const itemCount = Object.keys(allItems).length;
       document.getElementById("item-count").textContent = itemCount;
 
+      if (filteredItems.length === 0) {
+        list.innerHTML = '<div class="empty-state">[ NO MATCHING ASSETS FOUND ]<br/>TRY A DIFFERENT SEARCH TERM</div>';
+        return;
+      }
+
       // Sort items alphabetically (case-insensitive)
-      const sortedItems = Object.entries(items).sort((a, b) => 
+      const sortedItems = filteredItems.sort((a, b) => 
         a[0].toLowerCase().localeCompare(b[0].toLowerCase())
       );
 
@@ -514,6 +535,11 @@
     }
 
     loadInventory();
+
+    // Search functionality
+    document.getElementById("search-input").addEventListener("input", (e) => {
+      loadInventory(e.target.value);
+    });
 
     // Add Item
     document.getElementById("add-btn").onclick = async () => {
